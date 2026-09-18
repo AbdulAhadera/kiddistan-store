@@ -11,30 +11,3 @@ A modern kidswear e-commerce experience built with **Next.js** and **Tailwind CS
 * Responsive design
 * Clean, minimal UI
 * Reusable components
-
-## 🛠 Tech Stack
-
-* Next.js
-* React
-* JavaScript
-* Tailwind CSS
-
-## 🚀 Getting Started
-
-```bash
-npm install
-npm run dev
-```
-
-Open http://localhost:3000 to view the project.
-
-## 📁 Structure
-
-```text
-app/
-components/
-public/
-mock/
-```
-
-Built with simplicity, scalability, and a smooth shopping experience in mind.
