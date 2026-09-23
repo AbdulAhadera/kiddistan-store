@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-
+import { useEffect, useMemo, useState } from "react";
 import {
   Minus,
   Plus,
@@ -12,8 +11,10 @@ import {
 } from "lucide-react";
 
 import Button from "@/components/ui/Button";
-
-import { addProductToCart, openCartDrawer } from "@/lib/cart";
+import {
+  addProductToCart,
+  openCartDrawer,
+} from "@/lib/cart";
 
 export default function ProductPurchase({
   product,
@@ -22,7 +23,6 @@ export default function ProductPurchase({
   currentImage,
 }) {
   const [quantity, setQuantity] = useState(1);
-
   const [isAdding, setIsAdding] = useState(false);
 
   const isBaba = theme === "baba";
@@ -45,24 +45,83 @@ export default function ProductPurchase({
         surface: "bg-baby-surface",
       };
 
+        
+  const availableSizes = useMemo(() => {
+    return (product?.available_sizes ?? []).filter(
+      (size) =>
+        size?.label &&
+        Number(size.stock_qty) > 0
+    );
+  }, [product?.available_sizes]);
+
+
+  const hasSizes = availableSizes.length > 0;
+
+  const selectedSizeRecord = availableSizes.find(
+    (size) => size.label === selectedSize
+  );
+
+  const maximumQuantity = hasSizes
+    ? Number(selectedSizeRecord?.stock_qty ?? 0)
+    : 1;
+
+  const cartSize = hasSizes ? selectedSize : "Standard";
+
+  const canAddToCart =
+    !isAdding &&
+    Boolean(cartSize) &&
+    (!hasSizes || maximumQuantity > 0);
+
+  const productAttributes = Object.entries(
+    product?.attributes ?? {}
+  ).filter(
+    ([, value]) =>
+      value !== null &&
+      value !== undefined &&
+      value !== ""
+  );
+
+  useEffect(() => {
+    setQuantity(1);
+  }, [product?.id, selectedSize]);
+
+  useEffect(() => {
+    if (
+      maximumQuantity > 0 &&
+      quantity > maximumQuantity
+    ) {
+      setQuantity(maximumQuantity);
+    }
+  }, [maximumQuantity, quantity]);
+
   const handleQuantityDecrease = () => {
-    setQuantity((prev) => Math.max(1, prev - 1));
+    setQuantity((previous) => Math.max(1, previous - 1));
   };
 
   const handleQuantityIncrease = () => {
-    setQuantity((prev) => prev + 1);
+    setQuantity((previous) => {
+      if (maximumQuantity <= 0) {
+        return 1;
+      }
+
+      return Math.min(previous + 1, maximumQuantity);
+    });
   };
 
   const handleAddToCart = () => {
-    if (!selectedSize || isAdding) {
+    if (!canAddToCart) {
+      return;
+    }
+
+    if (hasSizes && !selectedSizeRecord) {
       return;
     }
 
     try {
       addProductToCart(product, {
-        size: selectedSize,
+        size: cartSize,
         quantity,
-        image: currentImage || product?.primary_image || null,
+        image: currentImage || product.primary_image,
       });
 
       openCartDrawer();
@@ -73,7 +132,7 @@ export default function ProductPurchase({
 
       setIsAdding(true);
 
-      setTimeout(() => {
+      window.setTimeout(() => {
         setIsAdding(false);
       }, 800);
     } catch (error) {
@@ -91,9 +150,12 @@ export default function ProductPurchase({
     try {
       if (navigator.share) {
         await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(window.location.href);
+        return;
       }
+
+      await navigator.clipboard.writeText(
+        window.location.href
+      );
     } catch (error) {
       if (error?.name !== "AbortError") {
         console.error("Share failed:", error);
@@ -103,17 +165,16 @@ export default function ProductPurchase({
 
   return (
     <section className="pt-4">
-      {/* Quantity + Add To Cart */}
       <div className="grid grid-cols-[100px_1fr] gap-2">
-        {/* Quantity */}
         <div
           className={`flex h-11 items-center justify-between border ${styles.border} ${styles.surface}`}
         >
           <button
             type="button"
             onClick={handleQuantityDecrease}
+            disabled={quantity <= 1}
             aria-label="Decrease quantity"
-            className={`flex h-full w-8 items-center justify-center ${styles.secondary} transition-colors hover:opacity-60`}
+            className={`flex h-full w-8 items-center justify-center ${styles.secondary} transition-colors hover:opacity-60 disabled:cursor-not-allowed disabled:opacity-30`}
           >
             <Minus size={14} strokeWidth={1.8} />
           </button>
@@ -125,26 +186,35 @@ export default function ProductPurchase({
           <button
             type="button"
             onClick={handleQuantityIncrease}
+            disabled={
+              maximumQuantity <= 0 ||
+              quantity >= maximumQuantity
+            }
             aria-label="Increase quantity"
-            className={`flex h-full w-8 items-center justify-center ${styles.secondary} transition-colors hover:opacity-60`}
+            className={`flex h-full w-8 items-center justify-center ${styles.secondary} transition-colors hover:opacity-60 disabled:cursor-not-allowed disabled:opacity-30`}
           >
             <Plus size={14} strokeWidth={1.8} />
           </button>
         </div>
 
-        {/* Add */}
         <Button
           type="button"
           onClick={handleAddToCart}
-          disabled={!selectedSize || isAdding}
+          disabled={!canAddToCart}
           className={`h-11 w-full ${styles.primaryBg} text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50`}
         >
           {isAdding ? "Added to Cart" : "Add to Cart"}
         </Button>
       </div>
 
-      {/* Product Details */}
-      {product?.attributes && Object.keys(product.attributes).length > 0 && (
+      {hasSizes && selectedSizeRecord && (
+        <p className={`mt-2 text-[10px] ${styles.secondary}`}>
+          {maximumQuantity} item
+          {maximumQuantity === 1 ? "" : "s"} available in this size.
+        </p>
+      )}
+
+      {productAttributes.length > 0 && (
         <div className={`mt-4 border-t ${styles.border} pt-3.5`}>
           <h2
             className={`mb-3 font-[playfair-display] text-lg font-semibold ${styles.text}`}
@@ -153,20 +223,21 @@ export default function ProductPurchase({
           </h2>
 
           <div className={`space-y-2 text-[13px] ${styles.secondary}`}>
-            {Object.entries(product.attributes).map(([key, value]) => (
+            {productAttributes.map(([key, value]) => (
               <div key={key} className="flex gap-2">
                 <span className={`font-semibold capitalize ${styles.text}`}>
                   {key.replace(/_/g, " ")}:
                 </span>
 
-                <span className="font-normal">{String(value)}</span>
+                <span className="font-normal">
+                  {String(value)}
+                </span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Share */}
       <div className={`mt-4 border-t ${styles.border} pt-3`}>
         <button
           type="button"
@@ -178,26 +249,33 @@ export default function ProductPurchase({
         </button>
       </div>
 
-      {/* Benefits */}
       <div className={`mt-4 grid grid-cols-3 border-y ${styles.border}`}>
-        {/* Delivery */}
         <div
           className={`flex flex-col items-center justify-center gap-1.5 border-r ${styles.border} px-2 py-3 text-center`}
         >
-          <Truck size={17} strokeWidth={1.6} className={styles.primary} />
+          <Truck
+            size={17}
+            strokeWidth={1.6}
+            className={styles.primary}
+          />
 
           <span className={`text-xs font-semibold ${styles.text}`}>
             Delivery
           </span>
 
-          <span className={`text-[11px] ${styles.secondary}`}>Nationwide</span>
+          <span className={`text-[11px] ${styles.secondary}`}>
+            Nationwide
+          </span>
         </div>
 
-        {/* Exchange */}
         <div
           className={`flex flex-col items-center justify-center gap-1.5 border-r ${styles.border} px-2 py-3 text-center`}
         >
-          <RefreshCw size={17} strokeWidth={1.6} className={styles.primary} />
+          <RefreshCw
+            size={17}
+            strokeWidth={1.6}
+            className={styles.primary}
+          />
 
           <span className={`text-xs font-semibold ${styles.text}`}>
             Exchange
@@ -208,11 +286,16 @@ export default function ProductPurchase({
           </span>
         </div>
 
-        {/* Secure */}
         <div className="flex flex-col items-center justify-center gap-1.5 px-2 py-3 text-center">
-          <ShieldCheck size={17} strokeWidth={1.6} className={styles.primary} />
+          <ShieldCheck
+            size={17}
+            strokeWidth={1.6}
+            className={styles.primary}
+          />
 
-          <span className={`text-xs font-semibold ${styles.text}`}>Secure</span>
+          <span className={`text-xs font-semibold ${styles.text}`}>
+            Secure
+          </span>
 
           <span className={`text-[11px] ${styles.secondary}`}>
             Safe checkout

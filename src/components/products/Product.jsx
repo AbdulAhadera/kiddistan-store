@@ -1,23 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ProductGallery from "@/components/products/ProductGallery.jsx";
-import ProductDetails from "@/components/products/ProductDetails.jsx";
-import ProductPurchase from "@/components/products/ProductPurchase.jsx";
+
+import ProductGallery from "@/components/products/ProductGallery";
+import ProductDetails from "@/components/products/ProductDetails";
+import ProductPurchase from "@/components/products/ProductPurchase";
 
 export default function Product({
   product,
   theme = "baby",
+  gender,
 }) {
   const [selectedSize, setSelectedSize] = useState("");
   const [currentImage, setCurrentImage] = useState(
-    product?.primary_image || null
+    product?.primary_image ?? null
   );
 
-  // Product server se load/update hone par primary image sync karo
   useEffect(() => {
-    setCurrentImage(product?.primary_image || null);
-  }, [product?.primary_image]);
+    setSelectedSize("");
+    setCurrentImage(product?.primary_image ?? null);
+  }, [product?.id, product?.primary_image]);
 
   return (
     <main
@@ -39,6 +41,7 @@ export default function Product({
             <ProductDetails
               product={product}
               theme={theme}
+              gender={gender}
               selectedSize={selectedSize}
               setSelectedSize={setSelectedSize}
             />
