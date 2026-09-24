@@ -201,3 +201,17 @@ export const getActiveProducts = cache(async () => {
 
   return (data ?? []).map(mapProduct);
 });
+
+function getGenderFromCategory(category) {
+  const categorySlug = category?.slug?.toLowerCase() || "";
+
+  if (categorySlug.startsWith("boys-")) {
+    return "boys";
+  }
+
+  if (categorySlug.startsWith("girls-")) {
+    return "girls";
+  }
+
+  return null;
+}

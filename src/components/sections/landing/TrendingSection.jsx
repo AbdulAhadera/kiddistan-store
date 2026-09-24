@@ -1,60 +1,56 @@
 "use client";
 
-import { useState } from "react";
-import { products as mockProducts } from "@/mock/mockData";
-import ProductGridCard from "../../products/ProductGridCard.jsx";
+import { useMemo, useState } from "react";
 
-function formatProduct(prod) {
-  return {
-    ...prod,
-    isNew: prod.collection_slugs?.includes("new-arrivals"),
-  };
+import ProductGridCard from "@/components/products/ProductGridCard";
+
+function isNewArrival(product) {
+  return product.collection_slugs?.includes("new-arrivals");
 }
 
-const getCategoryProducts = () => {
-  return {
-    "New Arrivals": mockProducts
-      .filter((p) => p.collection_slugs?.includes("new-arrivals"))
-      .map(formatProduct),
+export default function TrendingSection({
+  newArrivals = [],
+  boysProducts = [],
+  girlsProducts = [],
+}) {
+  const categories = useMemo(
+    () => ({
+      "New Arrivals": newArrivals,
+      Boys: boysProducts,
+      Girls: girlsProducts,
+    }),
+    [newArrivals, boysProducts, girlsProducts]
+  );
 
-    Baby: mockProducts
-      .filter((p) => p.category_id?.includes("baby"))
-      .map(formatProduct),
+  const tabNames = Object.keys(categories);
 
-    Baba: mockProducts
-      .filter((p) => p.category_id?.includes("boys"))
-      .map(formatProduct),
-  };
-};
+  const [activeTab, setActiveTab] = useState("New Arrivals");
 
-export default function TrendingSection() {
-  const CATEGORIES = getCategoryProducts();
-  const TAB_NAMES = Object.keys(CATEGORIES);
-
-  const [activeTab, setActiveTab] = useState("Baba");
-
-  const activeProducts = CATEGORIES[activeTab] || [];
+  const activeProducts = categories[activeTab] ?? [];
 
   return (
-    <section className="bg-store-bg py-8 px-4 md:px-8">
-      {/* Header */}
+    <section className="bg-store-bg px-4 py-8 md:px-8">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-lg md:text-xl font-['Playfair_Display'] font-bold tracking-wider text-store-text uppercase">
+        <h2 className="font-['Playfair_Display'] text-lg font-bold uppercase tracking-wider text-store-text md:text-xl">
           Trending
         </h2>
 
-        {/* Tabs */}
-        <nav className="flex items-center gap-2 md:gap-3">
-          {TAB_NAMES.map((tab) => {
+        <nav
+          className="flex items-center gap-2 md:gap-3"
+          aria-label="Trending product categories"
+        >
+          {tabNames.map((tab) => {
             const isActive = activeTab === tab;
+
             return (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1 text-xs md:text-sm uppercase tracking-wide transition-all ${
+                aria-pressed={isActive}
+                className={`px-3 py-1 text-xs uppercase tracking-wide transition-all md:text-sm ${
                   isActive
-                    ? "border border-store-text text-store-text font-medium"
+                    ? "border border-store-text font-medium text-store-text"
                     : "border border-transparent text-store-text-secondary hover:text-store-text"
                 }`}
               >
@@ -65,30 +61,46 @@ export default function TrendingSection() {
         </nav>
       </div>
 
-      {/* Debug — remove once working */}
-      {activeProducts.length === 0 && (
-        <p className="text-sm text-red-500 mb-4">
-          No products found for tab: {activeTab}. Check category_id values in mockData.
+      {activeProducts.length === 0 ? (
+        <p className="py-4 text-sm text-store-text-secondary">
+          No products available in this collection.
         </p>
-      )}
+      ) : (
+        <div className="no-scrollbar flex w-full flex-nowrap gap-3 overflow-x-auto pb-2">
+          {activeProducts.map((product) => {
+            const gender =
+              product.gender === "boys" ||
+              product.gender === "girls"
+                ? product.gender
+                : null;
 
-      {/* Horizontal Product Slider */}
-      <div className="no-scrollbar flex w-full flex-nowrap gap-3 overflow-x-auto pb-2">
-        {activeProducts.map((product) => (
-          <div
-            key={product.id}
-            className="shrink-0 w-[53%] sm:w-[36%] md:w-[23%]"
-          >
-            <ProductGridCard product={product} />
-          </div>
-        ))}
-      </div>
+            if (!gender) {
+              return null;
+            }
+
+            return (
+              <div
+                key={product.id}
+                className="w-[53%] shrink-0 sm:w-[36%] md:w-[23%]"
+              >
+                <ProductGridCard
+                  product={product}
+                  gender={gender}
+                  isBaba={gender === "boys"}
+                  isNew={isNewArrival(product)}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <style jsx>{`
         .no-scrollbar {
           scrollbar-width: none;
           -ms-overflow-style: none;
         }
+
         .no-scrollbar::-webkit-scrollbar {
           display: none;
         }

@@ -29,7 +29,7 @@ export default function DesktopNavbar({
             }
           >
             <Link
-              href="/baba"
+              href="/boys"
               className="text-sm font-bold uppercase tracking-wider text-store-text transition-colors hover:text-store-primary"
             >
               BABA
@@ -46,7 +46,7 @@ export default function DesktopNavbar({
             }
           >
             <Link
-              href="/baby"
+              href="/girls"
               className="text-sm font-bold uppercase tracking-wider text-store-text transition-colors hover:text-store-primary"
             >
               BABY

@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Manrope, Noto_Sans_Arabic, Playfair_Display } from "next/font/google";
 
+
 // 1. English Body Font
 const manrope = Manrope({
   subsets: ["latin"],
@@ -23,19 +24,20 @@ const notoSansArabic = Noto_Sans_Arabic({
   display: "swap",
 });
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata = {
   title: "Kiddistan | Premium Kids & Baby Apparel",
   description:
     "Explore high-quality, culturally rich apparel for children aged 1.5 to 12 years. Discover Kurtas, Waistcoats, Lehengas & more, designed and made in Pakistan.",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-  },
-  charSet: "utf-8",
   icons: {
     icon: "/icon.svg",
   },
 };
+
 
 const RootLayout = ({ children }) => {
   return (

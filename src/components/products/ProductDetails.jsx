@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Heart, Ruler } from "lucide-react";
 
@@ -13,7 +13,22 @@ export default function ProductDetails({
 }) {
   const isBaba = theme === "baba";
 
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(() => {
+    if (typeof window === "undefined" || !product?.id) {
+      return false;
+    }
+
+    try {
+      const wishlist = JSON.parse(
+        localStorage.getItem("wishlist") || "[]"
+      );
+
+      return wishlist.some((item) => item.id === product.id);
+    } catch {
+      return false;
+    }
+  });
+
   const [wishlistMessage, setWishlistMessage] = useState("");
   const [showWishlistToast, setShowWishlistToast] = useState(false);
 
@@ -53,25 +68,6 @@ export default function ProductDetails({
     comparePrice !== null &&
     comparePrice > Number(product?.price);
 
-  useEffect(() => {
-    if (!product?.id) {
-      setIsWishlisted(false);
-      return;
-    }
-
-    try {
-      const wishlist = JSON.parse(
-        localStorage.getItem("wishlist") || "[]"
-      );
-
-      setIsWishlisted(
-        wishlist.some((item) => item.id === product.id)
-      );
-    } catch {
-      setIsWishlisted(false);
-    }
-  }, [product?.id]);
-
   const handleWishlist = () => {
     if (!product?.id) {
       return;
@@ -105,6 +101,7 @@ export default function ProductDetails({
             ...wishlist,
             {
               id: product.id,
+              sku: product.sku,
               name: product.name,
               slug: product.slug,
               price: product.price,
@@ -270,7 +267,7 @@ export default function ProductDetails({
             </button>
           </div>
 
-          <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
+          <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-6">
             {sizes.map((size) => (
               <button
                 key={size}

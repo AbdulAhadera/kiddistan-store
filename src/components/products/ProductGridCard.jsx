@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-
 import {
   ShoppingBag,
   Heart,
@@ -17,8 +16,10 @@ import {
 } from "@/lib/cart";
 
 export default function ProductGridCard({
-  product = {},
+  product,
+  gender,
   isBaba = true,
+  isNew = false,
 }) {
   const [showSizePicker, setShowSizePicker] =
     useState(false);
@@ -29,89 +30,90 @@ export default function ProductGridCard({
   const [addedSuccess, setAddedSuccess] =
     useState(false);
 
-  const rawSizes =
-    product.sizes ||
-    product.available_sizes ||
-    [];
-
-  const availableSizes = rawSizes
-    .map((size) =>
-      typeof size === "string"
-        ? size
-        : size?.label
-    )
-    .filter(Boolean);
-
   const [selectedSize, setSelectedSize] =
-    useState(availableSizes[0] || "");
+    useState("");
 
-  const gender = product.gender
-    ? product.gender
-    : product.slug?.startsWith("baby")
-    ? "baby"
-    : isBaba
-    ? "baba"
-    : "baby";
+  if (
+    !product?.id ||
+    !product?.slug ||
+    !product?.name ||
+    !gender ||
+    (gender !== "boys" && gender !== "girls")
+  ) {
+    return null;
+  }
 
   const productUrl = `/${gender}/${product.slug}`;
 
   const primaryImg =
-    product.src ||
-    product.primary_image;
+    product.primary_image ||
+    product.images?.find((image) => image.is_primary)
+      ?.url ||
+    product.images?.[0]?.url ||
+    null;
 
   const hoverImg =
-    product.hoverSrc ||
-    product.images?.find(
-      (img) => !img.is_primary
-    )?.url;
+    product.images?.find((image) => !image.is_primary)
+      ?.url || null;
 
-  const displayPrice =
-    typeof product.price === "number"
-      ? `PKR ${product.price.toLocaleString()}`
-      : product.price || "";
+  const price = Number(product.price);
 
-  const displayOriginalPrice =
-    typeof product.compare_at_price ===
-    "number"
-      ? `PKR ${product.compare_at_price.toLocaleString()}`
-      : product.compare_at_price || null;
+  const comparePrice =
+    product.compare_at_price === null ||
+    product.compare_at_price === undefined
+      ? null
+      : Number(product.compare_at_price);
 
   const isOnSale =
-    Boolean(
-      product.compare_at_price &&
-        product.price &&
-        Number(product.compare_at_price) >
-          Number(product.price)
+    comparePrice !== null && comparePrice > price;
+
+  const availableSizes = (
+    product.available_sizes ??
+    product.sizes ??
+    []
+  )
+    .filter((size) => {
+      if (typeof size === "string") {
+        return Boolean(size);
+      }
+
+      return (
+        Boolean(size?.label) &&
+        (size.stock_qty === undefined ||
+          Number(size.stock_qty) > 0)
+      );
+    })
+    .map((size) =>
+      typeof size === "string" ? size : size.label
     );
 
-  const handleOpenPicker = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  if (!primaryImg) {
+    return null;
+  }
+
+  const handleOpenPicker = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
 
     if (availableSizes.length === 0) {
       handleAddToCart("Standard");
       return;
     }
 
-    if (!selectedSize) {
-      setSelectedSize(
-        availableSizes[0]
-      );
-    }
+    setSelectedSize(
+      (currentSelectedSize) =>
+        currentSelectedSize || availableSizes[0]
+    );
 
     setShowSizePicker(true);
   };
 
-  const handleAddToCart = (
-    size = "Standard"
-  ) => {
+  const handleAddToCart = (size = "Standard") => {
     try {
       addProductToCart(product, {
         size,
         quantity: 1,
-        image:
-          primaryImg ||
-          "/samples/baby/sample1.1.png",
+        image: primaryImg,
       });
 
       openCartDrawer();
@@ -122,9 +124,10 @@ export default function ProductGridCard({
 
       setAddedSuccess(true);
 
-      setTimeout(() => {
+      window.setTimeout(() => {
         setAddedSuccess(false);
         setShowSizePicker(false);
+        setSelectedSize("");
       }, 1200);
     } catch (error) {
       console.error(
@@ -134,20 +137,34 @@ export default function ProductGridCard({
     }
   };
 
-  const handleConfirmAdd = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleConfirmAdd = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
 
     handleAddToCart(
-      selectedSize || "Standard"
+      selectedSize || availableSizes[0] || "Standard"
     );
+  };
+
+  const handleWishlist = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setIsWishlisted((current) => !current);
+  };
+
+  const handleClosePicker = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setShowSizePicker(false);
+    setSelectedSize("");
   };
 
   return (
     <div className="group relative w-full text-left">
       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-none bg-store-bg-secondary shadow-sm">
-        {/* Badges */}
-        {product.isNew && (
+        {isNew && (
           <span className="absolute left-2.5 top-2.5 z-10 bg-black px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
             New
           </span>
@@ -159,32 +176,25 @@ export default function ProductGridCard({
           </span>
         )}
 
-        {/* Product Image */}
         <Link
           href={productUrl}
           className="block h-full w-full"
         >
-          {primaryImg && (
-            <Image
-              src={primaryImg}
-              alt={
-                product.name ||
-                "Product Image"
-              }
-              fill
-              sizes="(min-width: 768px) 28vw, 68vw"
-              className={`object-cover transition-opacity duration-300 ${
-                hoverImg
-                  ? "group-hover:opacity-0"
-                  : ""
-              }`}
-            />
-          )}
+          <Image
+            src={primaryImg}
+            alt={product.name}
+            fill
+            sizes="(min-width: 768px) 28vw, 68vw"
+            className={`object-cover transition-opacity duration-300 ${
+              hoverImg ? "group-hover:opacity-0" : ""
+            }`}
+          />
 
           {hoverImg && (
             <Image
               src={hoverImg}
-              alt={`${product.name} alternate view`}
+              alt=""
+              aria-hidden="true"
               fill
               sizes="(min-width: 768px) 28vw, 68vw"
               className="absolute inset-0 object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -192,19 +202,16 @@ export default function ProductGridCard({
           )}
         </Link>
 
-        {/* Wishlist */}
         <button
           type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            setIsWishlisted(
-              !isWishlisted
-            );
-          }}
+          onClick={handleWishlist}
           className="absolute right-2.5 top-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-black shadow-sm transition-transform hover:scale-105"
-          aria-label="Wishlist"
+          aria-label={
+            isWishlisted
+              ? "Remove from wishlist"
+              : "Add to wishlist"
+          }
+          aria-pressed={isWishlisted}
         >
           <Heart
             className={`h-4 w-4 ${
@@ -215,17 +222,15 @@ export default function ProductGridCard({
           />
         </button>
 
-        {/* Quick Cart Button */}
         {!showSizePicker && (
           <button
             type="button"
-            onClick={
-              handleOpenPicker
-            }
-            className={`absolute bottom-2.5 right-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black text-white shadow-sm transition-transform hover:scale-105 active:scale-95 ${
+            onClick={handleOpenPicker}
+            disabled={addedSuccess}
+            className={`absolute bottom-2.5 right-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full text-white shadow-sm transition-transform hover:scale-105 active:scale-95 ${
               addedSuccess
                 ? "bg-emerald-600"
-                : ""
+                : "bg-black"
             }`}
             aria-label="Quick add to cart"
           >
@@ -237,86 +242,60 @@ export default function ProductGridCard({
           </button>
         )}
 
-        {/* Size Picker */}
         {showSizePicker && (
           <div
             className="absolute inset-x-2 bottom-2 z-20 rounded-none border border-neutral-200 bg-white p-3 shadow-md"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
             }}
           >
             <div className="mb-2 flex items-center justify-between border-b border-neutral-100 pb-1.5">
               <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-700">
                 Size:{" "}
                 <span className="font-bold">
-                  {selectedSize ||
-                    "Select"}
+                  {selectedSize || "Select"}
                 </span>
               </span>
 
               <button
                 type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowSizePicker(
-                    false
-                  );
-                }}
+                onClick={handleClosePicker}
                 className="p-0.5 text-neutral-400 hover:text-neutral-900"
-                aria-label="Close"
+                aria-label="Close size picker"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
 
-            {/* Sizes */}
             <div className="mb-2.5 flex flex-wrap gap-1">
-              {availableSizes.length >
-              0 ? (
-                availableSizes.map(
-                  (size) => {
-                    const isSelected =
-                      selectedSize ===
-                      size;
+              {availableSizes.map((size) => {
+                const isSelected = selectedSize === size;
 
-                    return (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-
-                          setSelectedSize(
-                            size
-                          );
-                        }}
-                        className={`rounded-none px-2 py-1 text-[11px] font-medium transition-all ${
-                          isSelected
-                            ? "bg-black text-white"
-                            : "border border-neutral-300 bg-white text-neutral-700 hover:border-black"
-                        }`}
-                      >
-                        {size}
-                      </button>
-                    );
-                  }
-                )
-              ) : (
-                <span className="text-[10px] text-neutral-400">
-                  Standard / Free Size
-                </span>
-              )}
+                return (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setSelectedSize(size);
+                    }}
+                    className={`rounded-none px-2 py-1 text-[11px] font-medium transition-all ${
+                      isSelected
+                        ? "bg-black text-white"
+                        : "border border-neutral-300 bg-white text-neutral-700 hover:border-black"
+                    }`}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Confirm */}
             <button
               type="button"
-              onClick={
-                handleConfirmAdd
-              }
+              onClick={handleConfirmAdd}
               disabled={addedSuccess}
               className={`relative flex w-full items-center justify-center gap-1.5 rounded-none py-2 text-xs font-semibold uppercase tracking-wider text-white transition-all duration-300 ${
                 addedSuccess
@@ -325,22 +304,21 @@ export default function ProductGridCard({
               }`}
             >
               {addedSuccess ? (
-                <span className="flex items-center gap-1.5">
+                <>
                   <Check className="h-4 w-4" />
                   Item Added
-                </span>
+                </>
               ) : (
-                <span className="flex items-center gap-1.5">
+                <>
                   <ShoppingBag className="h-3.5 w-3.5" />
                   Add To Cart
-                </span>
+                </>
               )}
             </button>
           </div>
         )}
       </div>
 
-      {/* Product Info */}
       <div className="mt-2.5 space-y-1 px-0.5">
         <Link href={productUrl}>
           <h3 className="line-clamp-1 text-xs font-normal uppercase tracking-wide text-neutral-900 hover:underline md:text-sm">
@@ -349,15 +327,14 @@ export default function ProductGridCard({
         </Link>
 
         <div className="flex flex-wrap items-center gap-2">
-          {displayOriginalPrice &&
-            isOnSale && (
-              <span className="text-xs text-neutral-400 line-through md:text-sm">
-                {displayOriginalPrice}
-              </span>
-            )}
+          {isOnSale && (
+            <span className="text-xs text-neutral-400 line-through md:text-sm">
+              {product.currency} {comparePrice.toLocaleString()}
+            </span>
+          )}
 
           <span className="text-xs font-bold text-neutral-900 md:text-sm">
-            {displayPrice}
+            {product.currency} {price.toLocaleString()}
           </span>
         </div>
       </div>

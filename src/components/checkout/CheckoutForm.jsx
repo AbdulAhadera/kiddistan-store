@@ -4,6 +4,8 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import {
   clearCart,
@@ -12,100 +14,70 @@ import {
   subscribeToCart,
 } from "@/lib/cart";
 
+import { placeCodOrder } from "@/actions/orders";
 import CheckoutFormFields from "./CheckoutFormFields";
 import OrderSummary from "./OrderSummary";
-import Link from "next/link";
 
 export default function CheckoutForm() {
+  const router = useRouter();
+
   const cart = useSyncExternalStore(
     subscribeToCart,
     getCartSnapshot,
     () => []
   );
 
-  const [form, setForm] =
-    useState(() => {
-      const defaultForm = {
-        email: "",
-        newsletter: true,
-        country: "Pakistan",
-        firstName: "",
-        lastName: "",
-        address: "",
-        city: "Karachi",
-        postalCode: "",
-        phone: "",
-        saveInfo: false,
-        paymentMethod: "cod",
-        billingOption: "same",
+  const [form, setForm] = useState(() => {
+    const defaultForm = {
+      email: "",
+      country: "Pakistan",
+      firstName: "",
+      lastName: "",
+      address: "",
+      city: "Karachi",
+      postalCode: "",
+      phone: "",
+      paymentMethod: "COD",
+    };
+
+    if (typeof window === "undefined") {
+      return defaultForm;
+    }
+
+    try {
+      const savedInfo = localStorage.getItem(
+        "checkout_saved_info"
+      );
+
+      if (!savedInfo) {
+        return defaultForm;
+      }
+
+      return {
+        ...defaultForm,
+        ...JSON.parse(savedInfo),
       };
+    } catch {
+      return defaultForm;
+    }
+  });
 
-      if (
-        typeof window ===
-        "undefined"
-      ) {
-        return defaultForm;
-      }
-
-      try {
-        const savedInfo =
-          localStorage.getItem(
-            "checkout_saved_info"
-          );
-
-        if (!savedInfo) {
-          return defaultForm;
-        }
-
-        const parsed =
-          JSON.parse(
-            savedInfo
-          );
-
-        return {
-          ...defaultForm,
-          ...parsed,
-          saveInfo: true,
-        };
-      } catch {
-        return defaultForm;
-      }
-    });
-
-  const [fieldErrors, setFieldErrors] =
-    useState({});
-
-  const [discountCode, setDiscountCode] =
-    useState("");
-
-  const [discountApplied, setDiscountApplied] =
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOrderComplete, setIsOrderComplete] =
     useState(false);
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
-
-  const subtotal =
-    getCartSubtotal(cart);
-
+  const subtotal = getCartSubtotal(cart);
   const deliveryFee = 0;
-
-  const total =
-    subtotal + deliveryFee;
+  const total = subtotal + deliveryFee;
 
   const handleChange = (event) => {
-    const {
-      name,
-      value,
-      type,
-      checked,
-    } = event.target;
+    const { name, value } = event.target;
 
     setForm((previous) => ({
       ...previous,
-      [name]:
-        type === "checkbox"
-          ? checked
-          : value,
+      [name]: value,
     }));
 
     if (fieldErrors[name]) {
@@ -114,78 +86,64 @@ export default function CheckoutForm() {
         [name]: "",
       }));
     }
+
+    if (submitError) {
+      setSubmitError("");
+    }
   };
 
   const validateForm = () => {
     const errors = {};
 
     if (!form.firstName.trim()) {
-      errors.firstName =
-        "First name is required.";
+      errors.firstName = "First name is required.";
     }
 
     if (!form.lastName.trim()) {
-      errors.lastName =
-        "Last name is required.";
+      errors.lastName = "Last name is required.";
     }
 
     if (!form.address.trim()) {
-      errors.address =
-        "Address is required.";
+      errors.address = "Address is required.";
     }
 
     if (!form.city.trim()) {
-      errors.city =
-        "City is required.";
+      errors.city = "City is required.";
     }
 
     if (!form.phone.trim()) {
-      errors.phone =
-        "Phone number is required.";
+      errors.phone = "Phone number is required.";
     } else if (
       !/^[0-9+\s()-]{10,15}$/.test(
         form.phone.trim()
       )
     ) {
-      errors.phone =
-        "Enter a valid phone number.";
+      errors.phone = "Enter a valid phone number.";
     }
 
     return errors;
   };
 
-  const handleApplyDiscount = () => {
-    if (discountCode.trim()) {
-      setDiscountApplied(true);
-    }
-  };
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (
       isSubmitting ||
+      isOrderComplete ||
       cart.length === 0
     ) {
       return;
     }
 
-    const errors =
-      validateForm();
+    const errors = validateForm();
 
-    if (
-      Object.keys(errors)
-        .length > 0
-    ) {
+    if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
 
-      const firstError =
-        Object.keys(errors)[0];
+      const firstError = Object.keys(errors)[0];
 
       document
-        .getElementById(
-          firstError
-        )
+        .getElementById(firstError)
         ?.scrollIntoView({
           behavior: "smooth",
           block: "center",
@@ -194,189 +152,80 @@ export default function CheckoutForm() {
       return;
     }
 
+    setIsSubmitting(true);
+    setSubmitError("");
+
     try {
-      setIsSubmitting(true);
+      const result = await placeCodOrder({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        address: form.address,
+        city: form.city,
+        postalCode: form.postalCode,
+        items: cart.map((item) => ({
+          id: item.id,
+          size: item.size || "Standard",
+          quantity: Number(item.quantity),
+        })),
+      });
 
-      /*
-       * ---------------------------------------------------------
-       * CUSTOMER
-       * ---------------------------------------------------------
-       *
-       * For V1 we persist one customer ID
-       * in localStorage.
-       *
-       * Later this becomes your Supabase customer ID.
-       */
+      if (!result.ok) {
+        if (result.fieldErrors) {
+          setFieldErrors(result.fieldErrors);
+        }
 
-      let customerId =
-        localStorage.getItem(
-          "kiddistan_customer_id"
+        setSubmitError(
+          result.message ||
+            "Please correct the highlighted fields and try again."
         );
 
-      if (!customerId) {
-        customerId = `CUS-${Date.now()
-          .toString()
-          .slice(-8)}`;
-
-        localStorage.setItem(
-          "kiddistan_customer_id",
-          customerId
-        );
+        setIsSubmitting(false);
+        return;
       }
 
-      /*
-       * ---------------------------------------------------------
-       * ORDER
-       * ---------------------------------------------------------
-       */
-
-      const orderNumber = `KD-${Date.now()
-        .toString()
-        .slice(-8)}`;
-
-      const customerName =
-        `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
-
-      const orderPayload = {
-        id: orderNumber,
-
-        orderNumber,
-
-        customer: {
-          id: customerId,
-          firstName:
-            form.firstName.trim(),
-          lastName:
-            form.lastName.trim(),
-          fullName:
-            customerName,
-          email:
-            form.email.trim(),
-          phone:
-            form.phone.trim(),
-        },
-
-        shipping: {
-          country:
-            form.country,
-          address:
-            form.address.trim(),
-          city:
-            form.city.trim(),
-          postalCode:
-            form.postalCode.trim(),
-        },
-
-        newsletter:
-          form.newsletter,
-
-        paymentMethod:
-          form.paymentMethod,
-
-        billingOption:
-          form.billingOption,
-
-        discountCode:
-          discountCode.trim() ||
-          null,
-
-        items: cart,
-
-        subtotal,
-
-        deliveryFee,
-
-        total,
-
-        status:
-          "pending",
-
-        createdAt:
-          new Date().toISOString(),
-      };
-
-      /*
-       * Save customer snapshot
-       */
       localStorage.setItem(
-        `customer:${customerId}`,
-        JSON.stringify(
-          orderPayload.customer
-        )
+        "checkout_saved_info",
+        JSON.stringify({
+          email: form.email.trim(),
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          address: form.address.trim(),
+          city: form.city.trim(),
+          postalCode: form.postalCode.trim(),
+          phone: form.phone.trim(),
+          country: "Pakistan",
+        })
       );
 
       /*
-       * Save order
+       * Mark checkout successful before clearing the cart.
+       * This prevents the empty-cart screen from appearing
+       * while the browser redirects to order success.
        */
-      localStorage.setItem(
-        `order:${orderNumber}`,
-        JSON.stringify(
-          orderPayload
-        )
-      );
-
-      localStorage.setItem(
-        "lastOrder",
-        JSON.stringify(
-          orderPayload
-        )
-      );
+      setIsOrderComplete(true);
 
       /*
-       * Save customer info for
-       * future checkout
-       */
-      if (form.saveInfo) {
-        localStorage.setItem(
-          "checkout_saved_info",
-          JSON.stringify({
-            email:
-              form.email.trim(),
-            firstName:
-              form.firstName.trim(),
-            lastName:
-              form.lastName.trim(),
-            address:
-              form.address.trim(),
-            city:
-              form.city.trim(),
-            postalCode:
-              form.postalCode.trim(),
-            phone:
-              form.phone.trim(),
-            country:
-              form.country,
-          })
-        );
-      } else {
-        localStorage.removeItem(
-          "checkout_saved_info"
-        );
-      }
-
-      /*
-       * Clear cart only after
-       * order has been saved.
+       * Clear only after Supabase successfully creates:
+       * - orders row
+       * - order_items rows
+       * - stock decrement
        */
       clearCart();
 
       /*
-       * IMPORTANT:
-       * Navigate using the actual
-       * order number.
-       *
-       * This prevents checkout
-       * from becoming an "empty cart"
-       * page after submission.
+       * replace() prevents Back navigation from returning
+       * customers to a completed checkout page.
        */
-
-      alert(`/order-success/${orderNumber}`)
-      window.location.href =
-        `/order-success/${orderNumber}`;
+      router.replace(
+        `/order-success/${result.order.id}`
+      );
     } catch (error) {
-      console.error(
-        "Failed to place order:",
-        error
+      console.error("Checkout failed:", error);
+
+      setSubmitError(
+        "Unable to place your order. Please try again."
       );
 
       setIsSubmitting(false);
@@ -384,18 +233,45 @@ export default function CheckoutForm() {
   };
 
   /*
-   * Empty cart when customer
-   * deliberately visits /checkout
-   * with no items.
+   * This screen appears only for the brief moment between:
+   *
+   * successful database order creation
+   *           ↓
+   * local cart clearing
+   *           ↓
+   * navigation to order success
+   *
+   * It prevents “Your bag is empty” from flashing.
+   */
+  if (isOrderComplete) {
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center px-6">
+        <div className="max-w-md text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-black text-white">
+            <span className="text-lg">✓</span>
+          </div>
+
+          <h1 className="mt-5 font-[var(--font-playfair)] text-2xl font-semibold text-store-text">
+            Order placed
+          </h1>
+
+          <p className="mt-2 text-sm leading-6 text-store-text-secondary">
+            Redirecting you to your order confirmation…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  /*
+   * Deliberate direct checkout visit with no cart items.
    */
   if (!cart.length) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center px-6">
         <div className="max-w-md text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center bg-store-bg-secondary">
-            <span className="text-xl">
-              🛍
-            </span>
+            <span className="text-xl">🛍</span>
           </div>
 
           <h1 className="mt-5 font-[var(--font-playfair)] text-2xl font-semibold text-store-text">
@@ -403,8 +279,7 @@ export default function CheckoutForm() {
           </h1>
 
           <p className="mt-2 text-sm leading-6 text-store-text-secondary">
-            Add something to your bag before
-            heading to checkout.
+            Add something to your bag before heading to checkout.
           </p>
 
           <Link
@@ -423,38 +298,22 @@ export default function CheckoutForm() {
       onSubmit={handleSubmit}
       className="grid min-h-screen grid-cols-1 lg:grid-cols-2"
     >
-      {/* LEFT */}
       <div className="border-b border-store-border bg-white px-5 py-8 sm:px-10 lg:border-b-0 lg:border-r lg:px-14 lg:py-10">
         <CheckoutFormFields
           form={form}
           fieldErrors={fieldErrors}
           handleChange={handleChange}
           isSubmitting={isSubmitting}
+          submitError={submitError}
         />
       </div>
 
-      {/* RIGHT */}
       <div className="bg-[#f5f5f5] px-5 py-8 sm:px-10 lg:px-14 lg:py-10">
         <OrderSummary
           cart={cart}
           subtotal={subtotal}
           deliveryFee={deliveryFee}
           total={total}
-          discountCode={
-            discountCode
-          }
-          setDiscountCode={
-            setDiscountCode
-          }
-          onApplyDiscount={
-            handleApplyDiscount
-          }
-          discountApplied={
-            discountApplied
-          }
-          isSubmitting={
-            isSubmitting
-          }
         />
       </div>
     </form>

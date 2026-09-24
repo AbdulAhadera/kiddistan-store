@@ -36,19 +36,19 @@ export default function MobileNavbar({ onOpenSearch, onOpenCart }) {
           items: [
             {
               label: "Kurtas",
-              href: "/baba/eastern/kurtas",
+              href: "/boys/eastern/kurtas",
             },
             {
               label: "Shalwar Kameez",
-              href: "/baba/eastern/shalwar-kameez",
+              href: "/boys/eastern/shalwar-kameez",
             },
             {
               label: "Waistcoats",
-              href: "/baba/eastern/waistcoats",
+              href: "/boys/eastern/waistcoats",
             },
             {
               label: "Prince Coats",
-              href: "/baba/eastern/prince-coats",
+              href: "/boys/eastern/prince-coats",
             },
           ],
         },
@@ -57,23 +57,23 @@ export default function MobileNavbar({ onOpenSearch, onOpenCart }) {
           items: [
             {
               label: "Shirts",
-              href: "/baba/western/shirts",
+              href: "/boys/western/shirts",
             },
             {
               label: "T-Shirts",
-              href: "/baba/western/t-shirts",
+              href: "/boys/western/t-shirts",
             },
             {
               label: "Trousers",
-              href: "/baba/western/trousers",
+              href: "/boys/western/trousers",
             },
             {
               label: "Shorts",
-              href: "/baba/western/shorts",
+              href: "/boys/western/shorts",
             },
             {
               label: "Jackets",
-              href: "/baba/western/jackets",
+              href: "/boys/western/jackets",
             },
           ],
         },
@@ -88,19 +88,19 @@ export default function MobileNavbar({ onOpenSearch, onOpenCart }) {
           items: [
             {
               label: "Lehengas",
-              href: "/baby/eastern/lehengas",
+              href: "/girls/eastern/lehengas",
             },
             {
               label: "Kurtis",
-              href: "/baby/eastern/kurtis",
+              href: "/girls/eastern/kurtis",
             },
             {
               label: "Frocks",
-              href: "/baby/eastern/frocks",
+              href: "/girls/eastern/frocks",
             },
             {
               label: "Shalwar Kameez",
-              href: "/baby/eastern/shalwar-kameez",
+              href: "/girls/eastern/shalwar-kameez",
             },
           ],
         },
@@ -109,23 +109,23 @@ export default function MobileNavbar({ onOpenSearch, onOpenCart }) {
           items: [
             {
               label: "Tops",
-              href: "/baby/western/tops",
+              href: "/girls/western/tops",
             },
             {
               label: "Skirts",
-              href: "/baby/western/skirts",
+              href: "/girls/western/skirts",
             },
             {
               label: "Dresses",
-              href: "/baby/western/dresses",
+              href: "/girls/western/dresses",
             },
             {
               label: "T-Shirts",
-              href: "/baby/western/t-shirts",
+              href: "/girls/western/t-shirts",
             },
             {
               label: "Pants",
-              href: "/baby/western/pants",
+              href: "/girls/western/pants",
             },
           ],
         },
@@ -284,11 +284,11 @@ export default function MobileNavbar({ onOpenSearch, onOpenCart }) {
                                         href={
                                           categoryKey === "boys"
                                             ? section.label === "Eastern Wear"
-                                              ? "/baba/eastern"
-                                              : "/baba/western"
+                                              ? "/boys/eastern"
+                                              : "/boys/western"
                                             : section.label === "Eastern Wear"
-                                              ? "/baby/eastern"
-                                              : "/baby/western"
+                                              ? "/girls/eastern"
+                                              : "/girls/western"
                                         }
                                         onClick={closeMenu}
                                         className="text-sm font-semibold text-store-text hover:text-store-primary transition-colors"

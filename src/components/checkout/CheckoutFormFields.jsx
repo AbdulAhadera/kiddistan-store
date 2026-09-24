@@ -5,10 +5,10 @@ export default function CheckoutFormFields({
   fieldErrors = {},
   handleChange,
   isSubmitting = false,
+  submitError = "",
 }) {
   return (
     <div className="mx-auto max-w-lg lg:ml-auto lg:mr-0 lg:pr-8">
-      {/* CONTACT */}
       <section className="pb-7">
         <SectionHeading
           title="Contact"
@@ -27,21 +27,11 @@ export default function CheckoutFormFields({
             autoComplete="email"
             inputMode="email"
           />
-
-          <Checkbox
-            name="newsletter"
-            checked={
-              form.newsletter
-            }
-            onChange={handleChange}
-            label="Email me with news and offers"
-          />
         </div>
       </section>
 
       <Divider />
 
-      {/* DELIVERY */}
       <section className="py-7">
         <SectionHeading
           title="Delivery"
@@ -53,10 +43,7 @@ export default function CheckoutFormFields({
             id="country"
             name="country"
             label="Country / Region"
-            value={
-              form.country ||
-              "Pakistan"
-            }
+            value={form.country || "Pakistan"}
             onChange={handleChange}
             readOnly
           />
@@ -66,17 +53,11 @@ export default function CheckoutFormFields({
               id="firstName"
               name="firstName"
               label="First name"
-              value={
-                form.firstName
-              }
-              onChange={
-                handleChange
-              }
+              value={form.firstName}
+              onChange={handleChange}
               placeholder="Ahmed"
               autoComplete="given-name"
-              error={
-                fieldErrors.firstName
-              }
+              error={fieldErrors.firstName}
               required
             />
 
@@ -84,17 +65,11 @@ export default function CheckoutFormFields({
               id="lastName"
               name="lastName"
               label="Last name"
-              value={
-                form.lastName
-              }
-              onChange={
-                handleChange
-              }
+              value={form.lastName}
+              onChange={handleChange}
               placeholder="Khan"
               autoComplete="family-name"
-              error={
-                fieldErrors.lastName
-              }
+              error={fieldErrors.lastName}
               required
             />
           </div>
@@ -107,9 +82,7 @@ export default function CheckoutFormFields({
             onChange={handleChange}
             placeholder="House no., street, block, nearest landmark"
             autoComplete="street-address"
-            error={
-              fieldErrors.address
-            }
+            error={fieldErrors.address}
             required
           />
 
@@ -119,14 +92,10 @@ export default function CheckoutFormFields({
               name="city"
               label="City"
               value={form.city}
-              onChange={
-                handleChange
-              }
+              onChange={handleChange}
               placeholder="Karachi"
               autoComplete="address-level2"
-              error={
-                fieldErrors.city
-              }
+              error={fieldErrors.city}
               required
             />
 
@@ -134,12 +103,8 @@ export default function CheckoutFormFields({
               id="postalCode"
               name="postalCode"
               label="Postal code"
-              value={
-                form.postalCode
-              }
-              onChange={
-                handleChange
-              }
+              value={form.postalCode}
+              onChange={handleChange}
               placeholder="75300"
               autoComplete="postal-code"
               inputMode="numeric"
@@ -156,26 +121,14 @@ export default function CheckoutFormFields({
             placeholder="+92 3XX XXXXXXX"
             autoComplete="tel"
             inputMode="tel"
-            error={
-              fieldErrors.phone
-            }
+            error={fieldErrors.phone}
             required
-          />
-
-          <Checkbox
-            name="saveInfo"
-            checked={
-              form.saveInfo
-            }
-            onChange={handleChange}
-            label="Save this information for next time"
           />
         </div>
       </section>
 
       <Divider />
 
-      {/* SHIPPING */}
       <section className="py-7">
         <SectionHeading title="Shipping Method" />
 
@@ -198,69 +151,33 @@ export default function CheckoutFormFields({
 
       <Divider />
 
-      {/* PAYMENT */}
       <section className="py-7">
         <SectionHeading
           title="Payment"
-          description="Choose your preferred payment method."
+          description="Cash on Delivery is currently available."
         />
 
         <div className="overflow-hidden border border-store-border">
           <PaymentOption
-            value="cod"
-            selected={
-              form.paymentMethod ===
-              "cod"
-            }
+            value="COD"
+            selected
             onChange={handleChange}
             title="Cash on Delivery"
             subtitle="Pay when your order arrives."
           />
-
-          <PaymentOption
-            value="payfast"
-            selected={
-              form.paymentMethod ===
-              "payfast"
-            }
-            onChange={handleChange}
-            title="PayFast"
-            subtitle="Debit / credit card, wallet or bank account."
-          />
         </div>
       </section>
 
-      <Divider />
-
-      {/* BILLING */}
-      <section className="py-7">
-        <SectionHeading title="Billing Address" />
-
-        <div className="overflow-hidden border border-store-border">
-          <BillingOption
-            value="same"
-            selected={
-              form.billingOption ===
-              "same"
-            }
-            onChange={handleChange}
-            title="Same as shipping address"
-          />
-
-          <BillingOption
-            value="different"
-            selected={
-              form.billingOption ===
-              "different"
-            }
-            onChange={handleChange}
-            title="Use a different billing address"
-          />
+      {submitError && (
+        <div
+          role="alert"
+          className="mb-5 border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700"
+        >
+          {submitError}
         </div>
-      </section>
+      )}
 
-      {/* BUTTON */}
-      <div className="pt-1 pb-8">
+      <div className="pb-8 pt-1">
         <button
           type="submit"
           disabled={isSubmitting}
@@ -268,7 +185,7 @@ export default function CheckoutFormFields({
         >
           {isSubmitting
             ? "Processing Order..."
-            : "Place Order"}
+            : "Place COD Order"}
         </button>
 
         <p className="mt-2 text-center text-[9px] text-store-text-secondary">
@@ -278,8 +195,6 @@ export default function CheckoutFormFields({
     </div>
   );
 }
-
-/* -------------------------------------------------------------------------- */
 
 function SectionHeading({
   title,
@@ -300,15 +215,11 @@ function SectionHeading({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-
 function Divider() {
   return (
     <div className="border-t border-store-border" />
   );
 }
-
-/* -------------------------------------------------------------------------- */
 
 function Field({
   id,
@@ -333,9 +244,7 @@ function Field({
         {label}
 
         {required && (
-          <span className="ml-0.5 text-red-500">
-            *
-          </span>
+          <span className="ml-0.5 text-red-500">*</span>
         )}
       </label>
 
@@ -346,9 +255,7 @@ function Field({
         value={value || ""}
         onChange={onChange}
         placeholder={placeholder}
-        autoComplete={
-          autoComplete
-        }
+        autoComplete={autoComplete}
         inputMode={inputMode}
         readOnly={readOnly}
         className={`h-9.5 w-full border bg-white px-3 text-[13px] text-store-text outline-none transition-all duration-200 placeholder:text-zinc-400 ${
@@ -371,33 +278,6 @@ function Field({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-
-function Checkbox({
-  name,
-  checked,
-  onChange,
-  label,
-}) {
-  return (
-    <label className="flex cursor-pointer items-center gap-2 text-[10px] text-store-text-secondary">
-      <input
-        type="checkbox"
-        name={name}
-        checked={Boolean(
-          checked
-        )}
-        onChange={onChange}
-        className="h-3.5 w-3.5 accent-black"
-      />
-
-      <span>{label}</span>
-    </label>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-
 function PaymentOption({
   value,
   selected,
@@ -407,10 +287,10 @@ function PaymentOption({
 }) {
   return (
     <label
-      className={`flex cursor-pointer items-center gap-3 border-b border-store-border px-4 py-3.5 last:border-b-0 transition-colors ${
+      className={`flex cursor-pointer items-center gap-3 px-4 py-3.5 transition-colors ${
         selected
           ? "bg-[#f7f7f7]"
-          : "bg-white hover:bg-[#fafafa]"
+          : "bg-white"
       }`}
     >
       <input
@@ -427,49 +307,13 @@ function PaymentOption({
           {title}
         </p>
 
-        {subtitle && (
-          <p className="mt-0.5 text-[9px] leading-4 text-store-text-secondary">
-            {subtitle}
-          </p>
-        )}
+        <p className="mt-0.5 text-[9px] leading-4 text-store-text-secondary">
+          {subtitle}
+        </p>
       </div>
 
-      {selected && (
-        <span className="text-[9px] font-bold uppercase tracking-wider text-store-text">
-          Selected
-        </span>
-      )}
-    </label>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-
-function BillingOption({
-  value,
-  selected,
-  onChange,
-  title,
-}) {
-  return (
-    <label
-      className={`flex cursor-pointer items-center gap-3 border-b border-store-border px-4 py-3.5 last:border-b-0 transition-colors ${
-        selected
-          ? "bg-[#f7f7f7]"
-          : "bg-white hover:bg-[#fafafa]"
-      }`}
-    >
-      <input
-        type="radio"
-        name="billingOption"
-        value={value}
-        checked={selected}
-        onChange={onChange}
-        className="h-3.5 w-3.5 shrink-0 accent-black"
-      />
-
-      <span className="text-[11px] font-medium text-store-text">
-        {title}
+      <span className="text-[9px] font-bold uppercase tracking-wider text-store-text">
+        Selected
       </span>
     </label>
   );
