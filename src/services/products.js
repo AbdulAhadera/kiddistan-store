@@ -40,6 +40,7 @@ const PRODUCT_SELECT = `
 
   product_sizes (
     id,
+    size_id,
     stock_qty,
 
     sizes (
@@ -51,15 +52,14 @@ const PRODUCT_SELECT = `
   ),
 
   product_collections (
+    collection_id,
+
     collections (
       id,
       name,
       slug,
       description,
-      banner_image,
-      is_active,
-      start_date,
-      end_date
+      is_active
     )
   )
 `;
@@ -71,36 +71,48 @@ function mapProduct(product) {
 
   const images = (product.product_images ?? [])
     .filter((image) => image?.id && image?.image_url)
-    .sort((first, second) => {
-      if (first.is_primary !== second.is_primary) {
-        return Number(second.is_primary) - Number(first.is_primary);
+    .sort((a, b) => {
+      if (a.is_primary !== b.is_primary) {
+        return a.is_primary ? -1 : 1;
       }
 
-      return first.sort_order - second.sort_order;
+      return Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0);
     })
     .map((image) => ({
       id: image.id,
       url: image.image_url,
-      is_primary: image.is_primary,
-      sort_order: image.sort_order,
+      is_primary: Boolean(image.is_primary),
+      sort_order: Number(image.sort_order ?? 0),
     }));
 
-  const availableSizes = (product.product_sizes ?? [])
-    .filter((productSize) => {
-      return (
-        productSize?.sizes?.id &&
-        productSize?.sizes?.label &&
-        Number(productSize.stock_qty) > 0
-      );
-    })
-    .sort((first, second) => {
-      return first.sizes.sort_order - second.sizes.sort_order;
-    })
-    .map((productSize) => ({
-      id: productSize.sizes.id,
-      label: productSize.sizes.label,
-      stock_qty: Number(productSize.stock_qty),
-      applies_to: productSize.sizes.applies_to,
+  const available_sizes = (product.product_sizes ?? [])
+    .filter(
+      (item) =>
+        item?.size_id &&
+        item?.sizes?.label &&
+        Number(item.stock_qty) > 0
+    )
+    .sort(
+      (a, b) =>
+        Number(a.sizes.sort_order ?? 0) -
+        Number(b.sizes.sort_order ?? 0)
+    )
+    .map((item) => ({
+      id: item.size_id,
+      label: item.sizes.label,
+      stock_qty: Number(item.stock_qty),
+      applies_to: item.sizes.applies_to,
+    }));
+
+  const collections = (product.product_collections ?? [])
+    .map((item) => item?.collections)
+    .filter((collection) => collection?.id && collection.is_active)
+    .map((collection) => ({
+      id: collection.id,
+      name: collection.name,
+      slug: collection.slug,
+      description: collection.description,
+      is_active: Boolean(collection.is_active),
     }));
 
   const attributes = Object.fromEntries(
@@ -111,21 +123,6 @@ function mapProduct(product) {
     }).filter(([, value]) => value !== null && value !== "")
   );
 
-  const collections = (product.product_collections ?? [])
-    .map((item) => item?.collections)
-    .filter(Boolean)
-    .filter((collection) => collection.is_active)
-    .map((collection) => ({
-      id: collection.id,
-      name: collection.name,
-      slug: collection.slug,
-      description: collection.description,
-      banner_image: collection.banner_image,
-      is_active: collection.is_active,
-      start_date: collection.start_date,
-      end_date: collection.end_date,
-    }));
-
   return {
     id: product.id,
     category_id: product.category_id,
@@ -133,14 +130,16 @@ function mapProduct(product) {
     slug: product.slug,
     description: product.description,
     product_type: product.product_type,
-    price: Number(product.price),
+    price: Number(product.price ?? 0),
     compare_at_price:
       product.compare_at_price === null
         ? null
         : Number(product.compare_at_price),
-    currency: product.currency,
+    currency: product.currency ?? "PKR",
     status: product.status,
     primary_image: product.primary_image,
+    created_at: product.created_at,
+    updated_at: product.updated_at,
 
     category: product.categories
       ? {
@@ -149,41 +148,18 @@ function mapProduct(product) {
           slug: product.categories.slug,
           parent_id: product.categories.parent_id,
           image_url: product.categories.image_url,
-          sort_order: product.categories.sort_order,
-          is_active: product.categories.is_active,
+          sort_order: Number(product.categories.sort_order ?? 0),
+          is_active: Boolean(product.categories.is_active),
         }
       : null,
 
     images,
-    available_sizes: availableSizes,
+    available_sizes,
     attributes,
-
     collections,
     collection_slugs: collections.map((collection) => collection.slug),
   };
 }
-
-export const getActiveProductBySlug = cache(async (slug) => {
-  if (!slug) {
-    return null;
-  }
-
-  const supabase = await createServerClient();
-
-  const { data, error } = await supabase
-    .from("products")
-    .select(PRODUCT_SELECT)
-    .eq("slug", slug)
-    .eq("status", "active")
-    .maybeSingle();
-
-  if (error) {
-    console.error("getActiveProductBySlug error:", error);
-    throw new Error("Unable to load product.");
-  }
-
-  return mapProduct(data);
-});
 
 export const getActiveProducts = cache(async () => {
   const supabase = await createServerClient();
@@ -195,21 +171,57 @@ export const getActiveProducts = cache(async () => {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("getActiveProducts error:", error);
+    console.error("getActiveProducts error:", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
+
     throw new Error("Unable to load products.");
   }
 
-  return (data ?? []).map(mapProduct);
+  return (data ?? []).map(mapProduct).filter(Boolean);
 });
 
-function getGenderFromCategory(category) {
-  const categorySlug = category?.slug?.toLowerCase() || "";
+export const getActiveProductBySlug = cache(async (slug) => {
+  const cleanSlug = typeof slug === "string" ? slug.trim() : "";
 
-  if (categorySlug.startsWith("boys-")) {
+  if (!cleanSlug) {
+    return null;
+  }
+
+  const supabase = await createServerClient();
+
+  const { data, error } = await supabase
+    .from("products")
+    .select(PRODUCT_SELECT)
+    .eq("slug", cleanSlug)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (error) {
+    console.error("getActiveProductBySlug error:", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
+
+    throw new Error("Unable to load product.");
+  }
+
+  return mapProduct(data);
+});
+
+export function getGenderFromCategory(category) {
+  const slug = category?.slug?.toLowerCase() ?? "";
+
+  if (slug.startsWith("boys-")) {
     return "boys";
   }
 
-  if (categorySlug.startsWith("girls-")) {
+  if (slug.startsWith("girls-")) {
     return "girls";
   }
 

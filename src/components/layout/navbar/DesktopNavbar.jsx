@@ -54,7 +54,7 @@ export default function DesktopNavbar({
           </div>
 
           <Link
-            href="/baba/eastern"
+            href="/collections/winter-fest-26"
             className="flex items-center space-x-1.5 text-sm font-bold uppercase tracking-wider text-red-600 transition-colors hover:text-red-700"
           >
             <span className="text-base">★</span>

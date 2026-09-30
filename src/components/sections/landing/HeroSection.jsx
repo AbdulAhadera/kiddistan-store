@@ -18,7 +18,7 @@ const slides = [
   {
     id: 3,
     image:
-      "/samples/hero/hero-3.png",
+      "/samples/hero/hero-3.jpg",
     alt: "Kiddistan girls collection",
   },
   {
