@@ -35,6 +35,7 @@ export default function Footer() {
                   width={12}
                   height={12}
                   priority
+                  loading="eager"
                   className="w-36 h-36 object-contain"
                 />
               </Link>

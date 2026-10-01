@@ -131,18 +131,18 @@ export default function ProductGallery({
 
   const comparePrice =
     product?.compare_at_price === null ||
-    product?.compare_at_price === undefined
+      product?.compare_at_price === undefined
       ? null
       : Number(product.compare_at_price);
 
   const discount =
     comparePrice !== null &&
-    comparePrice > Number(product?.price)
+      comparePrice > Number(product?.price)
       ? Math.round(
-          ((comparePrice - Number(product.price)) /
-            comparePrice) *
-            100
-        )
+        ((comparePrice - Number(product.price)) /
+          comparePrice) *
+        100
+      )
       : 0;
 
   const previousImage = () => {
@@ -248,8 +248,9 @@ export default function ProductGallery({
             priority
             sizes="(max-width: 1024px) 100vw, 50vw"
             className="object-cover"
+            placeholder="blur"
+            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
           />
-
           {zoom.active && (
             <div
               className="pointer-events-none absolute hidden border border-neutral-500 bg-white/25 lg:block"
@@ -346,11 +347,10 @@ export default function ProductGallery({
               type="button"
               onClick={() => setSelectedImage(index)}
               aria-label={`View image ${index + 1}`}
-              className={`relative aspect-square overflow-hidden border transition ${
-                selectedImage === index
-                  ? styles.primaryBorder
-                  : `${styles.mutedBorder} opacity-65 hover:opacity-100`
-              }`}
+              className={`relative aspect-square overflow-hidden border transition ${selectedImage === index
+                ? styles.primaryBorder
+                : `${styles.mutedBorder} opacity-65 hover:opacity-100`
+                }`}
             >
               <Image
                 src={image.url}
@@ -358,6 +358,8 @@ export default function ProductGallery({
                 fill
                 sizes="100px"
                 className="object-cover"
+                loading={index === 0 ? "eager" : "lazy"}
+                priority={index === 0}
               />
             </button>
           ))}

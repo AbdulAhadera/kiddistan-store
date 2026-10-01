@@ -51,17 +51,17 @@ export default function HeroSection() {
       {slides.map((slide, i) => (
         <div
           key={slide.id}
-          className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-            i === current
+          className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${i === current
               ? "opacity-100 z-10"
               : "opacity-0 z-0 pointer-events-none"
-          }`}
+            }`}
         >
           <Image
             src={slide.image}
             alt={slide.alt}
             fill
             priority={i === 0}
+            loading={i === 0 ? "eager" : "lazy"}
             sizes="100vw"
             className="object-cover"
           />
@@ -109,9 +109,8 @@ export default function HeroSection() {
             key={i}
             onClick={() => setCurrent(i)}
             aria-label={`Go to slide ${i + 1}`}
-            className={`h-1 rounded-full p-0 transition-all duration-300 ${
-              i === current ? "w-7 bg-white" : "w-2.5 bg-white/50"
-            }`}
+            className={`h-1 rounded-full p-0 transition-all duration-300 ${i === current ? "w-7 bg-white" : "w-2.5 bg-white/50"
+              }`}
           />
         ))}
       </div>

@@ -39,6 +39,7 @@ export default function OrderSummary({
                     fill
                     sizes="56px"
                     className="object-cover"
+                    loading='lazy'
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center px-1 text-center text-[8px] font-semibold uppercase tracking-wide text-store-text-secondary">

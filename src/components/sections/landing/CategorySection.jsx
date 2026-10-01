@@ -63,6 +63,7 @@ function PhotoTile({ tile, className }) {
             : "(min-width: 768px) 25vw, 50vw"
         }
         className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+        loading="lazy"
       />
       <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
       <div
@@ -71,8 +72,8 @@ function PhotoTile({ tile, className }) {
       >
         <h3
           className={`font-serif uppercase font-normal text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] ${tile.size === "large"
-              ? "text-3xl md:text-5xl mb-2"
-              : "text-lg md:text-xl"
+            ? "text-3xl md:text-5xl mb-2"
+            : "text-lg md:text-xl"
             }`}
         >
           {tile.label}

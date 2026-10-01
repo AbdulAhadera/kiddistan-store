@@ -38,7 +38,7 @@ export default function ProductCard({
 
   const comparePrice =
     product.compare_at_price === null ||
-    product.compare_at_price === undefined
+      product.compare_at_price === undefined
       ? null
       : Number(product.compare_at_price);
 
@@ -159,11 +159,11 @@ export default function ProductCard({
             alt={product.name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className={`object-cover transition-all duration-700 ease-out group-hover:scale-[1.02] ${
-              secondaryImg
+            loading="lazy"
+            className={`object-cover transition-all duration-700 ease-out group-hover:scale-[1.02] ${secondaryImg
                 ? "group-hover:opacity-0"
                 : ""
-            }`}
+              }`}
           />
 
           {secondaryImg && (
@@ -172,6 +172,7 @@ export default function ProductCard({
               alt=""
               aria-hidden="true"
               fill
+              loading="lazy"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className="object-cover opacity-0 transition-all duration-700 ease-out group-hover:scale-[1.02] group-hover:opacity-100"
             />
@@ -198,11 +199,10 @@ export default function ProductCard({
           aria-pressed={isWishlisted}
         >
           <Heart
-            className={`h-[17px] w-[17px] ${
-              isWishlisted
+            className={`h-[17px] w-[17px] ${isWishlisted
                 ? "fill-black text-black"
                 : "text-black"
-            }`}
+              }`}
             strokeWidth={1.8}
           />
         </button>
@@ -211,13 +211,12 @@ export default function ProductCard({
           type="button"
           onClick={handleQuickAdd}
           disabled={addedSuccess}
-          className={`absolute bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.18)] transition-all duration-200 ${
-            addedSuccess
+          className={`absolute bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.18)] transition-all duration-200 ${addedSuccess
               ? "pointer-events-none bg-black text-white"
               : showSizePicker
                 ? "pointer-events-none scale-95 opacity-0"
                 : "bg-black text-white hover:scale-[1.03] hover:bg-neutral-800 active:scale-95"
-          }`}
+            }`}
           aria-label="Add to cart"
         >
           {addedSuccess ? (
@@ -234,11 +233,10 @@ export default function ProductCard({
         </button>
 
         <div
-          className={`absolute inset-x-0 bottom-0 z-30 transition-all duration-300 ease-out ${
-            showSizePicker
+          className={`absolute inset-x-0 bottom-0 z-30 transition-all duration-300 ease-out ${showSizePicker
               ? "translate-y-0 opacity-100"
               : "pointer-events-none translate-y-full opacity-0"
-          }`}
+            }`}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -283,11 +281,10 @@ export default function ProductCard({
                         event.stopPropagation();
                         setSelectedSize(size);
                       }}
-                      className={`min-w-[40px] border px-2.5 py-1.5 text-[10px] font-semibold transition-all duration-150 ${
-                        isSelected
+                      className={`min-w-[40px] border px-2.5 py-1.5 text-[10px] font-semibold transition-all duration-150 ${isSelected
                           ? "border-black bg-black text-white"
                           : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-500 hover:text-black"
-                      }`}
+                        }`}
                     >
                       {size}
                     </button>
@@ -301,11 +298,10 @@ export default function ProductCard({
                 type="button"
                 onClick={handleConfirmAdd}
                 disabled={addedSuccess}
-                className={`flex h-10 w-full items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white transition-all duration-200 active:scale-[0.98] ${
-                  addedSuccess
+                className={`flex h-10 w-full items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white transition-all duration-200 active:scale-[0.98] ${addedSuccess
                     ? "bg-emerald-600"
                     : "bg-black hover:bg-neutral-800"
-                }`}
+                  }`}
               >
                 {addedSuccess ? (
                   <>
