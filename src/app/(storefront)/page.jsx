@@ -1,6 +1,5 @@
 import HeroSection from "@/components/sections/landing/HeroSection";
 import CategorySection from "@/components/sections/landing/CategorySection";
-// import TrustSection from "@/components/sections/landing/TrustSection";
 import TrendingSection from "@/components/sections/landing/TrendingSection";
 // import BestsellersSection from "@/components/sections/landing/BestsellersSection";
 import TestimonialsSection from "@/components/sections/landing/TestimonialsSection";
@@ -8,6 +7,8 @@ import TestimonialsSection from "@/components/sections/landing/TestimonialsSecti
 
 import { getActiveCategories } from "@/services/categories";
 import { getActiveProducts } from "@/services/products";
+import WinterFestSection from "@/components/sections/landing/WinterFestSection";
+import SaleSection from "@/components/sections/landing/SaleSection";
 
 
 function getRootCategory(categoryId, categoriesById) {
@@ -117,9 +118,9 @@ export default async function HomePage() {
 
       {/* <BestsellersSection /> */}
 
-
+      <WinterFestSection /> 
       <TestimonialsSection />
-
+      <SaleSection />
 
       {/* <TrustSection /> */}
     </>
