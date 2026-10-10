@@ -1,4 +1,3 @@
-// src/components/layout/navbar/NavDropdown.jsx
 "use client";
 
 import Link from "next/link";
@@ -10,39 +9,26 @@ export default function NavDropdown({ activeTab, onClose }) {
   const categories = {
     baba: {
       title: "Baba Collection",
-      genderPath: "/baba",
+      genderPath: "/boys",
       items: [
         {
-          name: "Eastern Wear",
-          // Query parameter ke sath route update kar diya hai
-          href: "/baba?filter=eastern",
+          name: "Shop Boys",
+          href: "/boys",
           image:
             "https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?q=80&w=1200&auto=format&fit=crop",
-        },
-        {
-          name: "Western Wear",
-          href: "/baba?filter=western",
-          image:
-            "https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?q=80&w=1200&auto=format&fit=crop",
         },
       ],
     },
 
     baby: {
       title: "Baby Collection",
-      genderPath: "/baby",
+      genderPath: "/girls",
       items: [
         {
-          name: "Eastern Wear",
-          href: "/baby?filter=eastern",
+          name: "Shop Girls",
+          href: "/girls",
           image:
             "https://images.unsplash.com/photo-1518831959646-742c3a14ebf7?q=80&w=1200&auto=format&fit=crop",
-        },
-        {
-          name: "Western Wear",
-          href: "/baby?filter=western",
-          image:
-            "https://images.unsplash.com/photo-1607453998774-d533f65dac99?q=80&w=1200&auto=format&fit=crop",
         },
       ],
     },
@@ -60,7 +46,7 @@ export default function NavDropdown({ activeTab, onClose }) {
       transition={{ duration: 0.18, ease: "easeOut" }}
       className="absolute top-full left-0 w-full bg-white border-b border-store-border shadow-xl z-50 overflow-hidden font-sans"
     >
-      <div className="max-w-7xl mx-auto px-8 py-6">
+      <div className="mx-auto px-8 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-store-text-secondary">
@@ -77,8 +63,8 @@ export default function NavDropdown({ activeTab, onClose }) {
           </Link>
         </div>
 
-        {/* Collections */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Single Card */}
+        <div className="grid grid-cols-1 gap-4">
           {currentCategory.items.map((item) => (
             <Link
               key={item.name}
@@ -91,7 +77,7 @@ export default function NavDropdown({ activeTab, onClose }) {
                 src={item.image}
                 alt={item.name}
                 fill
-                sizes="(max-width: 1024px) 50vw, 600px"
+                sizes="100vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
                 loading="lazy"
               />

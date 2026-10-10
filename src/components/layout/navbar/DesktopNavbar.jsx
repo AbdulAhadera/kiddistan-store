@@ -7,12 +7,11 @@ import { AnimatePresence } from "framer-motion";
 import NavDropdown from "./NavDropdown";
 
 export default function DesktopNavbar({
-  onOpenSearch,
   onOpenCart,
   cartCount = 0,
+  wishlistCount = 0,
 }) {
-  const [activeDropdown, setActiveDropdown] =
-    useState(null);
+  const [activeDropdown, setActiveDropdown] = useState(null);
 
   return (
     <header className="relative z-40 bg-white border-b border-store-border/80 shadow-xs font-sans">
@@ -21,12 +20,8 @@ export default function DesktopNavbar({
         <nav className="flex items-center space-x-9">
           <div
             className="py-6"
-            onMouseEnter={() =>
-              setActiveDropdown("baba")
-            }
-            onMouseLeave={() =>
-              setActiveDropdown(null)
-            }
+            onMouseEnter={() => setActiveDropdown("baba")}
+            onMouseLeave={() => setActiveDropdown(null)}
           >
             <Link
               href="/boys"
@@ -38,12 +33,8 @@ export default function DesktopNavbar({
 
           <div
             className="py-6"
-            onMouseEnter={() =>
-              setActiveDropdown("baby")
-            }
-            onMouseLeave={() =>
-              setActiveDropdown(null)
-            }
+            onMouseEnter={() => setActiveDropdown("baby")}
+            onMouseLeave={() => setActiveDropdown(null)}
           >
             <Link
               href="/girls"
@@ -54,7 +45,7 @@ export default function DesktopNavbar({
           </div>
 
           <Link
-            href="/collections/winter-fest-26"
+            href="/collections/winter-fest"
             className="flex items-center space-x-1.5 text-sm font-bold uppercase tracking-wider text-red-600 transition-colors hover:text-red-700"
           >
             <span className="text-base">★</span>
@@ -77,16 +68,8 @@ export default function DesktopNavbar({
           />
         </Link>
 
-        {/* RIGHT: SEARCH, WISHLIST, BAG */}
+        {/* RIGHT: WISHLIST, BAG */}
         <div className="flex items-center space-x-8">
-          <button
-            type="button"
-            onClick={onOpenSearch}
-            className="cursor-pointer text-sm font-bold uppercase tracking-wider text-store-text transition-colors hover:text-store-primary"
-          >
-            SEARCH
-          </button>
-
           <Link
             href="/wishlist"
             className="relative flex items-center text-sm font-bold uppercase tracking-wider text-store-text transition-colors hover:text-store-primary"
@@ -94,7 +77,7 @@ export default function DesktopNavbar({
             <span>WISHLIST</span>
 
             <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-store-bg-secondary text-xs font-bold text-store-text">
-              0
+              {wishlistCount}
             </span>
           </Link>
 
@@ -116,20 +99,12 @@ export default function DesktopNavbar({
       <AnimatePresence>
         {activeDropdown && (
           <div
-            onMouseEnter={() =>
-              setActiveDropdown(
-                activeDropdown
-              )
-            }
-            onMouseLeave={() =>
-              setActiveDropdown(null)
-            }
+            onMouseEnter={() => setActiveDropdown(activeDropdown)}
+            onMouseLeave={() => setActiveDropdown(null)}
           >
             <NavDropdown
               activeTab={activeDropdown}
-              onClose={() =>
-                setActiveDropdown(null)
-              }
+              onClose={() => setActiveDropdown(null)}
             />
           </div>
         )}

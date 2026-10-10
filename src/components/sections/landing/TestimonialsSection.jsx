@@ -1,6 +1,5 @@
 "use client";
 
-
 const TESTIMONIALS = [
   {
     quote:
@@ -36,17 +35,13 @@ const TESTIMONIALS = [
   },
 ];
 
-
 export default function TestimonialsSection() {
   return (
-    <section className="bg-store-bg border-t border-store-border px-4 py-12 md:px-8 md:py-16">
+    <section className="border-t border-store-border px-4 py-12 md:px-8 md:py-16">
       <div className="mx-auto max-w-none">
-        <h2
-          className="text-center font-['Playfair_Display'] text-2xl font-bold uppercase tracking-wider text-store-text md:text-3xl"
-        >
+        <h2 className="text-center font-['Playfair_Display'] text-2xl font-bold uppercase tracking-wider text-store-text md:text-3xl">
           Customer Response
         </h2>
-
 
         <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {TESTIMONIALS.map((t, i) => (
@@ -70,7 +65,6 @@ export default function TestimonialsSection() {
                   />
                 )}
 
-
                 {/* Overlay with quote */}
                 <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4">
                   <p className="text-sm text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
@@ -78,7 +72,6 @@ export default function TestimonialsSection() {
                   </p>
                 </div>
               </div>
-
 
               {/* Info below media */}
               <div className="mt-3 flex items-center justify-between">
@@ -90,6 +83,7 @@ export default function TestimonialsSection() {
                     {t.location}
                   </p>
                 </div>
+
                 {t.type === "video" && (
                   <div className="flex h-8 w-8 items-center justify-center rounded-full border border-store-border">
                     <svg

@@ -1,4 +1,3 @@
-// src/components/layout/navbar/MobileNavbar.jsx
 "use client";
 
 import { useState } from "react";
@@ -10,127 +9,14 @@ import {
   X,
   Search,
   ShoppingBag,
-  ChevronDown,
   Phone,
 } from "lucide-react";
 
 export default function MobileNavbar({ onOpenSearch, onOpenCart }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [expandedSection, setExpandedSection] = useState(null);
-
-  const toggleSection = (section) => {
-    setExpandedSection(expandedSection === section ? null : section);
-  };
 
   const closeMenu = () => {
     setIsMenuOpen(false);
-    setExpandedSection(null);
-  };
-
-  const categories = {
-    boys: {
-      label: "Boys",
-      sections: [
-        {
-          label: "Eastern Wear",
-          items: [
-            {
-              label: "Kurtas",
-              href: "/boys/eastern/kurtas",
-            },
-            {
-              label: "Shalwar Kameez",
-              href: "/boys/eastern/shalwar-kameez",
-            },
-            {
-              label: "Waistcoats",
-              href: "/boys/eastern/waistcoats",
-            },
-            {
-              label: "Prince Coats",
-              href: "/boys/eastern/prince-coats",
-            },
-          ],
-        },
-        {
-          label: "Western Wear",
-          items: [
-            {
-              label: "Shirts",
-              href: "/boys/western/shirts",
-            },
-            {
-              label: "T-Shirts",
-              href: "/boys/western/t-shirts",
-            },
-            {
-              label: "Trousers",
-              href: "/boys/western/trousers",
-            },
-            {
-              label: "Shorts",
-              href: "/boys/western/shorts",
-            },
-            {
-              label: "Jackets",
-              href: "/boys/western/jackets",
-            },
-          ],
-        },
-      ],
-    },
-
-    girls: {
-      label: "Girls",
-      sections: [
-        {
-          label: "Eastern Wear",
-          items: [
-            {
-              label: "Lehengas",
-              href: "/girls/eastern/lehengas",
-            },
-            {
-              label: "Kurtis",
-              href: "/girls/eastern/kurtis",
-            },
-            {
-              label: "Frocks",
-              href: "/girls/eastern/frocks",
-            },
-            {
-              label: "Shalwar Kameez",
-              href: "/girls/eastern/shalwar-kameez",
-            },
-          ],
-        },
-        {
-          label: "Western Wear",
-          items: [
-            {
-              label: "Tops",
-              href: "/girls/western/tops",
-            },
-            {
-              label: "Skirts",
-              href: "/girls/western/skirts",
-            },
-            {
-              label: "Dresses",
-              href: "/girls/western/dresses",
-            },
-            {
-              label: "T-Shirts",
-              href: "/girls/western/t-shirts",
-            },
-            {
-              label: "Pants",
-              href: "/girls/western/pants",
-            },
-          ],
-        },
-      ],
-    },
   };
 
   return (
@@ -231,95 +117,39 @@ export default function MobileNavbar({ onOpenSearch, onOpenCart }) {
                 />
               </div>
 
-              {/* Categories */}
-              <div className="flex-1 space-y-5">
-                {Object.entries(categories).map(
-                  ([categoryKey, category]) => {
-                    const isOpen = expandedSection === categoryKey;
+              {/* Simple Links */}
+              <div className="flex-1 space-y-1">
+                <Link
+                  href="/boys"
+                  onClick={closeMenu}
+                  className="flex items-center justify-between border-b border-store-border py-4 text-base font-semibold text-store-text hover:text-store-primary transition-colors"
+                >
+                  <span>Boys</span>
+                </Link>
 
-                    return (
-                      <div
-                        key={categoryKey}
-                        className="border-b border-store-border pb-4"
-                      >
-                        {/* Main Category */}
-                        <button
-                          type="button"
-                          onClick={() => toggleSection(categoryKey)}
-                          className="flex w-full items-center justify-between text-base font-semibold text-store-text hover:text-store-primary transition-colors"
-                        >
-                          <span>{category.label}</span>
+                <Link
+                  href="/girls"
+                  onClick={closeMenu}
+                  className="flex items-center justify-between border-b border-store-border py-4 text-base font-semibold text-store-text hover:text-store-primary transition-colors"
+                >
+                  <span>Girls</span>
+                </Link>
 
-                          <ChevronDown
-                            className={`h-4 w-4 transition-transform ${
-                              isOpen ? "rotate-180" : ""
-                            }`}
-                          />
-                        </button>
+                <Link
+                  href="/collections/winter-fest-26"
+                  onClick={closeMenu}
+                  className="flex items-center justify-between border-b border-store-border py-4 text-base font-semibold text-red-600 hover:text-red-700 transition-colors"
+                >
+                  <span>★ Winter Fest 26</span>
+                </Link>
 
-                        {/* Eastern + Western Auto Open */}
-                        <AnimatePresence initial={false}>
-                          {isOpen && (
-                            <motion.div
-                              initial={{
-                                height: 0,
-                                opacity: 0,
-                              }}
-                              animate={{
-                                height: "auto",
-                                opacity: 1,
-                              }}
-                              exit={{
-                                height: 0,
-                                opacity: 0,
-                              }}
-                              className="overflow-hidden"
-                            >
-                              <div className="mt-4 ml-3 space-y-5">
-                                {category.sections.map((section) => (
-                                  <div key={section.label}>
-                                    {/* Section Title */}
-                                    <div className="mb-2">
-                                      <Link
-                                        href={
-                                          categoryKey === "boys"
-                                            ? section.label === "Eastern Wear"
-                                              ? "/boys/eastern"
-                                              : "/boys/western"
-                                            : section.label === "Eastern Wear"
-                                              ? "/girls/eastern"
-                                              : "/girls/western"
-                                        }
-                                        onClick={closeMenu}
-                                        className="text-sm font-semibold text-store-text hover:text-store-primary transition-colors"
-                                      >
-                                        {section.label}
-                                      </Link>
-                                    </div>
-
-                                    {/* Items Always Visible */}
-                                    <div className="ml-3 flex flex-col gap-2">
-                                      {section.items.map((item) => (
-                                        <Link
-                                          key={item.href}
-                                          href={item.href}
-                                          onClick={closeMenu}
-                                          className="py-0.5 text-sm text-store-text-secondary hover:text-store-primary transition-colors"
-                                        >
-                                          {item.label}
-                                        </Link>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    );
-                  }
-                )}
+                <Link
+                  href="/sale"
+                  onClick={closeMenu}
+                  className="flex items-center justify-between border-b border-store-border py-4 text-base font-semibold text-store-text hover:text-store-primary transition-colors"
+                >
+                  <span>Sale</span>
+                </Link>
               </div>
 
               {/* Need Help */}
@@ -332,8 +162,14 @@ export default function MobileNavbar({ onOpenSearch, onOpenCart }) {
                   href="tel:+923012987787"
                   className="flex items-center gap-2 text-sm font-medium text-store-text hover:text-store-primary transition-colors"
                 >
-                  <Phone className="w-4 h-4" />
-                  <span>🇵🇰 +92 301 2987787</span>
+                  <Image
+                    src="/pk-flag.png"
+                    alt="Pakistan Flag"
+                    width={16}
+                    height={12}
+                    className="w-4 h-3 object-contain"
+                  />
+                  <span>+92 301 2987787</span>
                 </a>
               </div>
             </motion.div>

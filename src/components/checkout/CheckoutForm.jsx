@@ -124,6 +124,38 @@ export default function CheckoutForm() {
     return errors;
   };
 
+  const validateCartStock = async (items) => {
+    for (const item of items) {
+      const productId = item.id;
+      const sizeLabel = item.size || "Standard";
+      const requestedQty = Number(item.quantity);
+      
+      try {
+        const response = await fetch(
+          `/api/products/${productId}/stock?size=${encodeURIComponent(sizeLabel)}`
+        );
+        
+        if (!response.ok) {
+          continue;
+        }
+        
+        const data = await response.json();
+        const availableStock = data.stock || 0;
+        
+        if (requestedQty > availableStock) {
+          return {
+            ok: false,
+            message: `Only ${availableStock} item(s) available for this product in size "${sizeLabel}".`,
+          };
+        }
+      } catch (error) {
+        console.error("Stock check failed:", error);
+      }
+    }
+    
+    return { ok: true };
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -149,6 +181,14 @@ export default function CheckoutForm() {
           block: "center",
         });
 
+      return;
+    }
+
+    // ✅ Validate stock before placing order
+    const stockValidation = await validateCartStock(cart);
+
+    if (!stockValidation.ok) {
+      setSubmitError(stockValidation.message);
       return;
     }
 
@@ -199,25 +239,10 @@ export default function CheckoutForm() {
         })
       );
 
-      /*
-       * Mark checkout successful before clearing the cart.
-       * This prevents the empty-cart screen from appearing
-       * while the browser redirects to order success.
-       */
       setIsOrderComplete(true);
 
-      /*
-       * Clear only after Supabase successfully creates:
-       * - orders row
-       * - order_items rows
-       * - stock decrement
-       */
       clearCart();
 
-      /*
-       * replace() prevents Back navigation from returning
-       * customers to a completed checkout page.
-       */
       router.replace(
         `/order-success/${result.order.id}`
       );
@@ -232,17 +257,6 @@ export default function CheckoutForm() {
     }
   };
 
-  /*
-   * This screen appears only for the brief moment between:
-   *
-   * successful database order creation
-   *           ↓
-   * local cart clearing
-   *           ↓
-   * navigation to order success
-   *
-   * It prevents “Your bag is empty” from flashing.
-   */
   if (isOrderComplete) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center px-6">
@@ -263,9 +277,6 @@ export default function CheckoutForm() {
     );
   }
 
-  /*
-   * Deliberate direct checkout visit with no cart items.
-   */
   if (!cart.length) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center px-6">

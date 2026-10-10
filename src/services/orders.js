@@ -1,3 +1,4 @@
+// src/actions/orders.js
 import "server-only";
 
 import { createServerClient } from "@/lib/supabase-server";
@@ -19,6 +20,136 @@ function normalizeCartItems(items) {
         Number.isInteger(item.quantity) &&
         item.quantity > 0
     );
+}
+
+export async function validateCartStock(items) {
+  const supabase = await createServerClient();
+  
+  for (const item of items) {
+    const productId = item.id;
+    const sizeLabel = item.size || "Standard";
+    const requestedQty = Number(item.quantity);
+    
+    // Check if product has sizes
+    const { data: hasSizes } = await supabase
+      .from("product_sizes")
+      .select("id")
+      .eq("product_id", productId)
+      .limit(1);
+    
+    let availableStock = 0;
+    
+    if (hasSizes && hasSizes.length > 0) {
+      // Product has sizes
+      const { data: sizeData } = await supabase
+        .from("product_sizes")
+        .select(`
+          stock_qty,
+          sizes (
+            label
+          )
+        `)
+        .eq("product_id", productId)
+        .eq("sizes.label", sizeLabel)
+        .single();
+      
+      availableStock = sizeData?.stock_qty || 0;
+    } else {
+      // Product without sizes
+      const { data: product } = await supabase
+        .from("products")
+        .select("stock_qty")
+        .eq("id", productId)
+        .single();
+      
+      availableStock = product?.stock_qty || 0;
+    }
+    
+    if (requestedQty > availableStock) {
+      return {
+        ok: false,
+        message: `Only ${availableStock} item(s) available for this product in size "${sizeLabel}".`,
+      };
+    }
+  }
+  
+  return { ok: true };
+}
+
+export async function placeCodOrder({
+  firstName,
+  lastName,
+  email,
+  phone,
+  address,
+  city,
+  postalCode,
+  items,
+}) {
+  try {
+    const customerName = `${firstName.trim()} ${lastName.trim()}`;
+    const customerPhone = phone.trim();
+    const customerEmail = email?.trim() || null;
+    const shippingAddress = address.trim();
+    const orderCity = city.trim();
+    const notes = postalCode?.trim() || "";
+
+    const normalizedItems = normalizeCartItems(items);
+
+    if (normalizedItems.length === 0) {
+      return {
+        ok: false,
+        message: "Your cart is empty.",
+      };
+    }
+
+    const supabase = await createServerClient();
+
+    const { data, error } = await supabase.rpc(
+      "create_cod_order",
+      {
+        p_customer_name: customerName,
+        p_customer_phone: customerPhone,
+        p_customer_email: customerEmail,
+        p_shipping_address: shippingAddress,
+        p_city: orderCity,
+        p_notes: notes,
+        p_items: normalizedItems,
+      }
+    );
+
+    if (error) {
+      console.error("placeCodOrder RPC failed:", error);
+      return {
+        ok: false,
+        message: error.message || "Unable to place order.",
+      };
+    }
+
+    const order = Array.isArray(data) ? data[0] : data;
+
+    if (!order?.order_id || !order?.order_number) {
+      return {
+        ok: false,
+        message: "Order was not created correctly.",
+      };
+    }
+
+    return {
+      ok: true,
+      order: {
+        id: order.order_id,
+        orderNumber: order.order_number,
+        totalAmount: Number(order.total_amount),
+      },
+    };
+  } catch (error) {
+    console.error("placeCodOrder failed:", error);
+    return {
+      ok: false,
+      message: error.message || "Unable to place your order. Please try again.",
+    };
+  }
 }
 
 export async function createCodOrder({
@@ -116,4 +247,4 @@ export async function getOrderById(orderId) {
   }
 
   return data;
-}
+} 

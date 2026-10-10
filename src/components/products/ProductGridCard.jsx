@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -32,16 +32,6 @@ export default function ProductGridCard({
 
   const [selectedSize, setSelectedSize] =
     useState("");
-
-  if (
-    !product?.id ||
-    !product?.slug ||
-    !product?.name ||
-    !gender ||
-    (gender !== "boys" && gender !== "girls")
-  ) {
-    return null;
-  }
 
   const productUrl = `/${gender}/${product.slug}`;
 
@@ -86,6 +76,46 @@ export default function ProductGridCard({
     .map((size) =>
       typeof size === "string" ? size : size.label
     );
+
+  // WISHLIST - initial load + live sync
+  useEffect(() => {
+    if (!product?.id) {
+      return;
+    }
+
+    const syncWishlistState = () => {
+      try {
+        const wishlist = JSON.parse(
+          localStorage.getItem("wishlist") || "[]"
+        );
+        setIsWishlisted(
+          wishlist.some((item) => item.id === product.id)
+        );
+      } catch {
+        setIsWishlisted(false);
+      }
+    };
+
+    syncWishlistState();
+
+    window.addEventListener("wishlistUpdated", syncWishlistState);
+    window.addEventListener("storage", syncWishlistState);
+
+    return () => {
+      window.removeEventListener("wishlistUpdated", syncWishlistState);
+      window.removeEventListener("storage", syncWishlistState);
+    };
+  }, [product?.id]);
+
+  if (
+    !product?.id ||
+    !product?.slug ||
+    !product?.name ||
+    !gender ||
+    (gender !== "boys" && gender !== "girls")
+  ) {
+    return null;
+  }
 
   if (!primaryImg) {
     return null;
@@ -150,7 +180,54 @@ export default function ProductGridCard({
     event.preventDefault();
     event.stopPropagation();
 
-    setIsWishlisted((current) => !current);
+    if (!product?.id) {
+      return;
+    }
+
+    try {
+      const wishlist = JSON.parse(
+        localStorage.getItem("wishlist") || "[]"
+      );
+
+      const exists = wishlist.some(
+        (item) => item.id === product.id
+      );
+
+      const updatedWishlist = exists
+        ? wishlist.filter((item) => item.id !== product.id)
+        : [
+            ...wishlist,
+            {
+              id: product.id,
+              sku: product.sku,
+              name: product.name,
+              slug: product.slug,
+              price: product.price,
+              currency: product.currency,
+              image: primaryImg,
+              gender,
+            },
+          ];
+
+      localStorage.setItem(
+        "wishlist",
+        JSON.stringify(updatedWishlist)
+      );
+
+      setIsWishlisted(!exists);
+
+      window.dispatchEvent(
+        new CustomEvent("wishlistUpdated", {
+          detail: updatedWishlist,
+        })
+      );
+
+      if (navigator.vibrate) {
+        navigator.vibrate(30);
+      }
+    } catch (error) {
+      console.error("Failed to update wishlist:", error);
+    }
   };
 
   const handleClosePicker = (event) => {
@@ -163,7 +240,7 @@ export default function ProductGridCard({
 
   return (
     <div className="group relative w-full text-left">
-      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-none bg-store-bg-secondary shadow-sm">
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-none bg-store-bg-secondary shadow-sm md:aspect-[3/4]">
         {isNew && (
           <span className="absolute left-2.5 top-2.5 z-10 bg-black px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
             New
@@ -184,9 +261,10 @@ export default function ProductGridCard({
             src={primaryImg}
             alt={product.name}
             fill
-            sizes="(min-width: 768px) 28vw, 68vw"
-            className={`object-cover transition-opacity duration-300 ${hoverImg ? "group-hover:opacity-0" : ""
-              }`}
+            sizes="(min-width: 768px) 28vw, 85vw"
+            className={`object-cover transition-opacity duration-300 ${
+              hoverImg ? "group-hover:opacity-0" : ""
+            }`}
             loading="lazy"
           />
 
@@ -196,7 +274,7 @@ export default function ProductGridCard({
               alt=""
               aria-hidden="true"
               fill
-              sizes="(min-width: 768px) 28vw, 68vw"
+              sizes="(min-width: 768px) 28vw, 85vw"
               className="absolute inset-0 object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
               loading="lazy"
             />
@@ -215,10 +293,11 @@ export default function ProductGridCard({
           aria-pressed={isWishlisted}
         >
           <Heart
-            className={`h-4 w-4 ${isWishlisted
+            className={`h-4 w-4 ${
+              isWishlisted
                 ? "fill-red-500 text-red-500"
                 : "text-black"
-              }`}
+            }`}
           />
         </button>
 
@@ -227,10 +306,11 @@ export default function ProductGridCard({
             type="button"
             onClick={handleOpenPicker}
             disabled={addedSuccess}
-            className={`absolute bottom-2.5 right-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full text-white shadow-sm transition-transform hover:scale-105 active:scale-95 ${addedSuccess
+            className={`absolute bottom-2.5 right-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full text-white shadow-sm transition-transform hover:scale-105 active:scale-95 ${
+              addedSuccess
                 ? "bg-emerald-600"
                 : "bg-black"
-              }`}
+            }`}
             aria-label="Quick add to cart"
           >
             {addedSuccess ? (
@@ -280,10 +360,11 @@ export default function ProductGridCard({
                       event.stopPropagation();
                       setSelectedSize(size);
                     }}
-                    className={`rounded-none px-2 py-1 text-[11px] font-medium transition-all ${isSelected
+                    className={`rounded-none px-2 py-1 text-[11px] font-medium transition-all ${
+                      isSelected
                         ? "bg-black text-white"
                         : "border border-neutral-300 bg-white text-neutral-700 hover:border-black"
-                      }`}
+                    }`}
                   >
                     {size}
                   </button>
@@ -295,10 +376,11 @@ export default function ProductGridCard({
               type="button"
               onClick={handleConfirmAdd}
               disabled={addedSuccess}
-              className={`relative flex w-full items-center justify-center gap-1.5 rounded-none py-2 text-xs font-semibold uppercase tracking-wider text-white transition-all duration-300 ${addedSuccess
+              className={`relative flex w-full items-center justify-center gap-1.5 rounded-none py-2 text-xs font-semibold uppercase tracking-wider text-white transition-all duration-300 ${
+                addedSuccess
                   ? "scale-95 bg-emerald-600"
                   : "bg-black hover:bg-neutral-800 active:scale-90"
-                }`}
+              }`}
             >
               {addedSuccess ? (
                 <>
@@ -326,7 +408,8 @@ export default function ProductGridCard({
         <div className="flex flex-wrap items-center gap-2">
           {isOnSale && (
             <span className="text-xs text-neutral-400 line-through md:text-sm">
-              {product.currency} {comparePrice.toLocaleString()}
+              {product.currency}{" "}
+              {comparePrice.toLocaleString()}
             </span>
           )}
 

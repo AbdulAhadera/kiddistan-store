@@ -1,114 +1,289 @@
-// src/components/products/SaleProductCard.jsx
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { ShoppingBag, X, Check } from "lucide-react";
 
+import { addProductToCart, openCartDrawer } from "@/lib/cart";
 
-export default function SaleProductCard({ product, gender }) {
-  const discount = product.compare_at_price && product.compare_at_price > product.price
+export default function SaleProductCard({
+  product = {},
+  gender = "boys",
+}) {
+  const [showSizePicker, setShowSizePicker] = useState(false);
+  const [addedSuccess, setAddedSuccess] = useState(false);
+  const [selectedSize, setSelectedSize] = useState("");
+
+  const rawSizes = product.sizes || product.available_sizes || [];
+
+  const availableSizes = rawSizes
+    .map((size) => (typeof size === "string" ? size : size?.label))
+    .filter(Boolean);
+
+  const productUrl = `/${gender}/${product.slug}`;
+
+  const primaryImg =
+    product.src || product.primary_image || product.images?.[0]?.url;
+
+  const hoverImg =
+    product.hoverSrc ||
+    product.images?.find((img) => !img.is_primary)?.url;
+
+  const displayPrice =
+    typeof product.price === "number"
+      ? `PKR ${product.price.toLocaleString()}`
+      : product.price || "";
+
+  const displayOriginalPrice =
+    typeof product.compare_at_price === "number"
+      ? `PKR ${product.compare_at_price.toLocaleString()}`
+      : product.compare_at_price || null;
+
+  const isOnSale = Boolean(
+    product.compare_at_price &&
+      product.price &&
+      Number(product.compare_at_price) > Number(product.price)
+  );
+
+  const discountPercent = isOnSale
     ? Math.round(
-        ((product.compare_at_price - product.price) /
-          product.compare_at_price) *
+        ((Number(product.compare_at_price) - Number(product.price)) /
+          Number(product.compare_at_price)) *
           100
       )
     : 0;
 
+  const handleAddToCart = (size = "Standard") => {
+    try {
+      addProductToCart(product, {
+        size,
+        quantity: 1,
+        image: primaryImg || "/samples/baby/sample1.1.png",
+      });
 
-  const image =
-    product.images?.[0]?.url ||
-    product.images?.[0] ||
-    product.image_url ||
-    product.image ||
-    product.primary_image;
+      openCartDrawer();
 
+      if (window.navigator?.vibrate) {
+        window.navigator.vibrate(40);
+      }
 
-  const productName = product.name || product.title || "Untitled Product";
-  const productHref = gender ? `/${gender}/${product.slug}` : `/products/${product.slug}`;
+      setAddedSuccess(true);
 
+      setTimeout(() => {
+        setAddedSuccess(false);
+        setShowSizePicker(false);
+      }, 1200);
+    } catch (error) {
+      console.error("Failed to add item to cart:", error);
+    }
+  };
 
-  const formatPrice = (price) =>
-    `Rs. ${Number(price).toLocaleString("en-PK")}`;
+  const handleOpenPicker = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
+    if (availableSizes.length === 0) {
+      handleAddToCart("Standard");
+      return;
+    }
 
-  if (!product?.id || !product?.slug || !image) {
-    return null;
-  }
+    if (!selectedSize) {
+      setSelectedSize(availableSizes[0]);
+    }
 
+    setShowSizePicker(true);
+  };
+
+  const handleConfirmAdd = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleAddToCart(selectedSize || "Standard");
+  };
 
   return (
-    <Link href={productHref} className="group block">
-      <article className="relative overflow-hidden bg-white border border-store-border hover:border-red-600/50 transition-all duration-300">
-        {/* Image Container */}
-        <div className="relative aspect-[3/4] overflow-hidden bg-store-bg-secondary">
-          <Image
-            src={image}
-            alt={productName}
-            fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-          
-          {/* Discount Badge - Sharp corner */}
-          {discount > 0 && (
-            <div className="absolute top-0 right-0 z-20">
-              <div className="bg-red-600 text-white px-4 py-2 text-sm font-bold shadow-lg">
-                <span className="block text-lg leading-none">{discount}%</span>
-                <span className="block text-[8px] uppercase tracking-wider mt-0.5">OFF</span>
+    <div className="group">
+      <div className="relative aspect-[4/5] overflow-hidden bg-store-bg-secondary md:aspect-[3/4]">
+        <Link href={productUrl} className="absolute inset-0 block">
+          {primaryImg && (
+            <Image
+              src={primaryImg}
+              alt={product.name || "Product"}
+              fill
+              sizes="(max-width: 640px) 85vw, (max-width: 1024px) 33vw, 25vw"
+              loading="lazy"
+              className={`object-cover transition-all duration-700 ease-out group-hover:scale-[1.02] ${
+                hoverImg ? "group-hover:opacity-0" : ""
+              }`}
+            />
+          )}
+
+          {hoverImg && (
+            <Image
+              src={hoverImg}
+              alt=""
+              aria-hidden="true"
+              fill
+              loading="lazy"
+              sizes="(max-width: 640px) 85vw, (max-width: 1024px) 33vw, 25vw"
+              className="object-cover opacity-0 transition-all duration-700 ease-out group-hover:scale-[1.02] group-hover:opacity-100"
+            />
+          )}
+
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/[0.06] via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+        </Link>
+
+        {isOnSale && (
+          <span className="pointer-events-none absolute left-3 top-3 z-10 inline-flex bg-red-600 px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-white">
+            -{discountPercent}%
+          </span>
+        )}
+
+        <button
+          type="button"
+          onClick={handleOpenPicker}
+          disabled={addedSuccess}
+          className={`absolute bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.18)] transition-all duration-200 ${
+            addedSuccess
+              ? "pointer-events-none bg-black text-white"
+              : showSizePicker
+                ? "pointer-events-none scale-95 opacity-0"
+                : "bg-black text-white hover:scale-[1.03] hover:bg-neutral-800 active:scale-95"
+          }`}
+          aria-label="Add to cart"
+        >
+          {addedSuccess ? (
+            <Check className="h-4 w-4" strokeWidth={2.5} />
+          ) : (
+            <ShoppingBag className="h-4 w-4" strokeWidth={1.8} />
+          )}
+        </button>
+
+        {/* Size Picker */}
+        <div
+          className={`absolute inset-x-0 bottom-0 z-30 transition-all duration-300 ease-out ${
+            showSizePicker
+              ? "translate-y-0 opacity-100"
+              : "pointer-events-none translate-y-full opacity-0"
+          }`}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
+          <div className="overflow-hidden border-t border-black/5 bg-white/95 shadow-[0_-4px_24px_rgba(0,0,0,0.14)] backdrop-blur-md">
+            <div className="flex items-center justify-between border-b border-neutral-100 px-3.5 py-2.5">
+              <div>
+                <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-neutral-400">
+                  Select size
+                </div>
+                <div className="mt-0.5 text-[12px] font-medium text-neutral-900">
+                  {selectedSize || "Choose a size"}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowSizePicker(false);
+                  setSelectedSize("");
+                }}
+                className="flex h-7 w-7 items-center justify-center text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+                aria-label="Close size selector"
+              >
+                <X className="h-4 w-4" strokeWidth={1.8} />
+              </button>
+            </div>
+
+            <div className="px-3.5 pt-3">
+              <div className="flex flex-wrap gap-1.5">
+                {availableSizes.map((size) => {
+                  const isSelected = selectedSize === size;
+
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSelectedSize(size);
+                      }}
+                      className={`min-w-[40px] border px-2.5 py-1.5 text-[10px] font-semibold transition-all duration-150 ${
+                        isSelected
+                          ? "border-black bg-black text-white"
+                          : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-500 hover:text-black"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          )}
-          
-          {/* Sale ribbon */}
-          {discount > 0 && (
-            <div className="absolute top-0 left-0">
-              <div className="bg-red-600 text-white px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider">
-                Sale
-              </div>
+
+            <div className="px-3.5 pb-3.5 pt-3">
+              <button
+                type="button"
+                onClick={handleConfirmAdd}
+                disabled={addedSuccess}
+                className={`flex h-10 w-full items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white transition-all duration-200 active:scale-[0.98] ${
+                  addedSuccess
+                    ? "bg-emerald-600"
+                    : "bg-black hover:bg-neutral-800"
+                }`}
+              >
+                {addedSuccess ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Added to cart
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="h-4 w-4" />
+                    Add to cart
+                  </>
+                )}
+              </button>
             </div>
-          )}
+          </div>
         </div>
+      </div>
 
+      {/* Product Info */}
+      <Link href={productUrl} className="block pt-3">
+        {product.category?.name && (
+          <div className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-store-text-secondary">
+            {product.category.name}
+          </div>
+        )}
 
-        {/* Product Info */}
-        <div className="p-4">
-          {/* Category */}
-          {product.category?.name && (
-            <div className="mb-2 text-[9px] font-semibold uppercase tracking-wider text-store-text-secondary">
-              {product.category.name}
-            </div>
-          )}
-          
-          {/* Product name */}
-          <h3 className="font-[var(--font-playfair)] text-base font-medium text-store-text mb-3 leading-snug group-hover:text-red-600 transition-colors duration-300">
-            {productName}
+        <div className="flex items-start justify-between gap-4">
+          <h3 className="min-w-0 flex-1 font-[var(--font-playfair)] text-[16px] leading-[1.35] tracking-normal text-store-text">
+            {product.name}
           </h3>
-          
-          {/* Price section */}
-          <div className="flex items-end justify-between">
-            <div>
-              <div className="text-lg font-bold text-red-600 leading-none">
-                {formatPrice(product.price)}
-              </div>
-              
-              {product.compare_at_price && product.compare_at_price > product.price && (
-                <div className="text-xs text-stone-400 line-through mt-1">
-                  {formatPrice(product.compare_at_price)}
-                </div>
-              )}
+
+          <div className="shrink-0 text-right">
+            <div className="whitespace-nowrap text-sm font-semibold tracking-tight text-store-text">
+              {displayPrice}
             </div>
-            
-            {product.compare_at_price && product.compare_at_price > product.price && (
-              <div className="text-right">
-                <div className="text-[9px] text-stone-500 uppercase tracking-wider font-semibold">
-                  Save
-                </div>
-                <div className="text-sm font-bold text-green-600 leading-none mt-0.5">
-                  {formatPrice(product.compare_at_price - product.price)}
-                </div>
+
+            {isOnSale && (
+              <div className="mt-0.5 whitespace-nowrap text-[12px] text-stone-400 line-through">
+                {displayOriginalPrice}
               </div>
             )}
           </div>
         </div>
-      </article>
-    </Link>
+
+        {product.product_type && (
+          <div className="mt-1.5 text-[10px] text-store-text-secondary">
+            {product.product_type}
+          </div>
+        )}
+      </Link>
+    </div>
   );
 }

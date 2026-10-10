@@ -16,6 +16,7 @@ export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
 
   useEffect(() => {
     const syncCart = () => {
@@ -25,46 +26,42 @@ export default function Navbar() {
       setCartCount(count);
     };
 
-    // Initial cart load
+    const syncWishlist = () => {
+      try {
+        const wishlist = JSON.parse(
+          localStorage.getItem("wishlist") || "[]"
+        );
+        setWishlistCount(wishlist.length);
+      } catch {
+        setWishlistCount(0);
+      }
+    };
+
+    // Initial load
     syncCart();
+    syncWishlist();
 
-    // Our custom cart event
-    window.addEventListener(
-      "cartUpdated",
-      syncCart
-    );
+    // Cart events
+    window.addEventListener("cartUpdated", syncCart);
+    window.addEventListener("storage", syncCart);
 
-    // Cross-tab localStorage changes
-    window.addEventListener(
-      "storage",
-      syncCart
-    );
+    // Wishlist events
+    window.addEventListener("wishlistUpdated", syncWishlist);
+    window.addEventListener("storage", syncWishlist);
 
     // Open drawer when product is added
     const handleOpenCart = () => {
       setIsCartOpen(true);
     };
 
-    window.addEventListener(
-      "openCartDrawer",
-      handleOpenCart
-    );
+    window.addEventListener("openCartDrawer", handleOpenCart);
 
     return () => {
-      window.removeEventListener(
-        "cartUpdated",
-        syncCart
-      );
-
-      window.removeEventListener(
-        "storage",
-        syncCart
-      );
-
-      window.removeEventListener(
-        "openCartDrawer",
-        handleOpenCart
-      );
+      window.removeEventListener("cartUpdated", syncCart);
+      window.removeEventListener("storage", syncCart);
+      window.removeEventListener("wishlistUpdated", syncWishlist);
+      window.removeEventListener("storage", syncWishlist);
+      window.removeEventListener("openCartDrawer", handleOpenCart);
     };
   }, []);
 
@@ -74,40 +71,30 @@ export default function Navbar() {
       <div className="hidden lg:block">
         <DesktopNavbar
           cartCount={cartCount}
-          onOpenSearch={() =>
-            setIsSearchOpen(true)
-          }
-          onOpenCart={() =>
-            setIsCartOpen(true)
-          }
+          wishlistCount={wishlistCount}
+          onOpenSearch={() => setIsSearchOpen(true)}
+          onOpenCart={() => setIsCartOpen(true)}
         />
       </div>
 
       {/* Mobile Navbar */}
       <MobileNavbar
         cartCount={cartCount}
-        onOpenSearch={() =>
-          setIsSearchOpen(true)
-        }
-        onOpenCart={() =>
-          setIsCartOpen(true)
-        }
+        wishlistCount={wishlistCount}
+        onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenCart={() => setIsCartOpen(true)}
       />
 
       {/* Search */}
       <SearchModal
         isOpen={isSearchOpen}
-        onClose={() =>
-          setIsSearchOpen(false)
-        }
+        onClose={() => setIsSearchOpen(false)}
       />
 
       {/* Cart */}
       <CartDrawer
         isOpen={isCartOpen}
-        onClose={() =>
-          setIsCartOpen(false)
-        }
+        onClose={() => setIsCartOpen(false)}
       />
     </>
   );

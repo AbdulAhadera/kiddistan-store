@@ -1,25 +1,27 @@
 "use client";
-
 import { useEffect, useState } from "react";
-
 import ProductGallery from "@/components/products/ProductGallery";
 import ProductDetails from "@/components/products/ProductDetails";
 import ProductPurchase from "@/components/products/ProductPurchase";
+
 
 export default function Product({
   product,
   theme = "baby",
   gender,
+  viewCount = 0,
 }) {
   const [selectedSize, setSelectedSize] = useState("");
   const [currentImage, setCurrentImage] = useState(
     product?.primary_image ?? null
   );
 
+
   useEffect(() => {
     setSelectedSize("");
     setCurrentImage(product?.primary_image ?? null);
   }, [product?.id, product?.primary_image]);
+
 
   return (
     <main
@@ -37,6 +39,7 @@ export default function Product({
             onImageChange={setCurrentImage}
           />
 
+
           <div>
             <ProductDetails
               product={product}
@@ -44,7 +47,9 @@ export default function Product({
               gender={gender}
               selectedSize={selectedSize}
               setSelectedSize={setSelectedSize}
+              viewCount={viewCount}
             />
+
 
             <ProductPurchase
               product={product}

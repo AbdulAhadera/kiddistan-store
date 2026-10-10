@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Heart, Ruler } from "lucide-react";
+import { Heart } from "lucide-react";
 
 export default function ProductDetails({
   product,
@@ -10,6 +10,7 @@ export default function ProductDetails({
   gender,
   selectedSize,
   setSelectedSize,
+  viewCount = 0,
 }) {
   const isBaba = theme === "baba";
 
@@ -220,6 +221,15 @@ export default function ProductDetails({
           </button>
         </div>
 
+        {/* View Count Badge */}
+        {viewCount > 0 && (
+          <div className="mt-2.5">
+            <span className={`text-[10px] ${styles.secondary}`}>
+              <span className="font-semibold">{viewCount}</span> people viewed this
+            </span>
+          </div>
+        )}
+
         <div className="mt-2.5 flex flex-wrap items-end gap-2.5">
           <span
             className={`font-[playfair-display] text-2xl font-medium ${styles.text}`}
@@ -251,21 +261,11 @@ export default function ProductDetails({
 
       {sizes.length > 0 && (
         <div className={`border-b ${styles.border} py-3.5`}>
-          <div className="mb-2.5 flex items-center justify-between">
-            <h2
-              className={`font-[playfair-display] text-xl font-medium ${styles.text}`}
-            >
-              Select Size
-            </h2>
-
-            <button
-              type="button"
-              className={`flex items-center gap-1 text-[10px] ${styles.secondary} ${styles.hoverPrimary} transition`}
-            >
-              <Ruler size={13} strokeWidth={1.7} />
-              Size Chart
-            </button>
-          </div>
+          <h2
+            className={`mb-2.5 font-[playfair-display] text-xl font-medium ${styles.text}`}
+          >
+            Select Size
+          </h2>
 
           <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-6">
             {sizes.map((size) => (

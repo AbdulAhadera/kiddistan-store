@@ -34,7 +34,7 @@ export const metadata = {
   description:
     "Explore high-quality, culturally rich apparel for children aged 1.5 to 12 years. Discover Kurtas, Waistcoats, Lehengas & more, designed and made in Pakistan.",
   icons: {
-    icon: "/icon.svg",
+    icon: "/favicon.png",
   },
 };
 

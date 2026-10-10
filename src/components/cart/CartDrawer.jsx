@@ -1,3 +1,5 @@
+// src/components/cart/CartDrawer.jsx
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -24,6 +26,8 @@ export default function CartDrawer({
   onClose,
 }) {
   const [cart, setCart] = useState([]);
+  const [stockData, setStockData] = useState({});
+  const [loadingStock, setLoadingStock] = useState({});
 
   useEffect(() => {
     const syncCart = () => {
@@ -54,6 +58,60 @@ export default function CartDrawer({
       );
     };
   }, []);
+
+  // Fetch stock when cart changes OR drawer opens
+  useEffect(() => {
+    if (!cart.length || !isOpen) {
+      setStockData({});
+      setLoadingStock({});
+      return;
+    }
+
+    const fetchStock = async () => {
+      // Mark all items as loading
+      const loadingState = {};
+      cart.forEach((item) => {
+        const key = `${item.id}-${item.size || "Standard"}`;
+        loadingState[key] = true;
+      });
+      setLoadingStock(loadingState);
+
+      const stockPromises = cart.map(async (item) => {
+        const key = `${item.id}-${item.size || "Standard"}`;
+        
+        try {
+          const sizeParam = encodeURIComponent(item.size || "Standard");
+          const response = await fetch(
+            `/api/products/${item.id}/stock?size=${sizeParam}`
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            return { key, stock: data.stock ?? 0 };
+          }
+          return { key, stock: 0 };
+        } catch (error) {
+          console.error(`Stock fetch failed for ${key}:`, error);
+          return { key, stock: 0 };
+        }
+      });
+
+      const results = await Promise.all(stockPromises);
+      
+      const newStockData = {};
+      const newLoadingState = {};
+      
+      results.forEach(({ key, stock }) => {
+        newStockData[key] = stock;
+        newLoadingState[key] = false;
+      });
+
+      setStockData(newStockData);
+      setLoadingStock(newLoadingState);
+    };
+
+    fetchStock();
+  }, [cart, isOpen]); // ✅ cart dependency added
 
   useEffect(() => {
     if (!isOpen) {
@@ -87,7 +145,26 @@ export default function CartDrawer({
     };
   }, [isOpen, onClose]);
 
-  const handleIncrease = (item) => {
+  const handleIncrease = async (item) => {
+    const key = `${item.id}-${item.size || "Standard"}`;
+    const availableStock = stockData[key];
+
+    // If stock data is not loaded yet, allow increase (optimistic)
+    if (availableStock === undefined) {
+      updateCartItemQuantity(
+        item.id,
+        item.size,
+        1
+      );
+      return;
+    }
+
+    // Check stock before allowing increase
+    if (item.quantity >= availableStock) {
+      alert(`Only ${availableStock} item(s) available in ${item.size || "Standard"}`);
+      return;
+    }
+
     updateCartItemQuantity(
       item.id,
       item.size,
@@ -220,21 +297,27 @@ export default function CartDrawer({
                 </div>
               ) : (
                 <div className="divide-y divide-store-border">
-                  {cart.map((item) => (
-                    <CartItem
-                      key={`${item.id}-${item.size}`}
-                      item={item}
-                      onIncrease={
-                        handleIncrease
-                      }
-                      onDecrease={
-                        handleDecrease
-                      }
-                      onRemove={
-                        handleRemove
-                      }
-                    />
-                  ))}
+                  {cart.map((item) => {
+                    const key = `${item.id}-${item.size || "Standard"}`;
+                    const availableStock = stockData[key];
+                    const isLoading = loadingStock[key] === true;
+                    const remainingStock = availableStock !== null ? availableStock - item.quantity : null;
+                    const isMaxStock = availableStock !== null && item.quantity >= availableStock;
+
+                    return (
+                      <CartItem
+                        key={key}
+                        item={item}
+                        onIncrease={handleIncrease}
+                        onDecrease={handleDecrease}
+                        onRemove={handleRemove}
+                        availableStock={availableStock}
+                        remainingStock={remainingStock}
+                        isMaxStock={isMaxStock}
+                        isLoadingStock={isLoading}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </div>

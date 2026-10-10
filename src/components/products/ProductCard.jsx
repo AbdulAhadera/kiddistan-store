@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -22,67 +22,84 @@ export default function ProductCard({
   const [addedSuccess, setAddedSuccess] = useState(false);
   const [selectedSize, setSelectedSize] = useState("");
 
-  const productUrl = `/${gender}/${product.slug}`;
-
   const primaryImg =
     product?.primary_image ||
     product?.images?.find((image) => image?.is_primary)?.url ||
     product?.images?.[0]?.url ||
+    product?.image ||
     null;
 
   const secondaryImg =
     product?.images?.find((image) => !image?.is_primary)?.url ||
     null;
 
-  const price = Number(product.price);
+  const price = Number(product?.price ?? 0);
 
   const comparePrice =
-    product.compare_at_price === null ||
-      product.compare_at_price === undefined
+    product?.compare_at_price == null
       ? null
       : Number(product.compare_at_price);
 
-  const isOnSale =
-    comparePrice !== null && comparePrice > price;
+  const isOnSale = comparePrice !== null && comparePrice > price;
 
-  const rawSizes =
-    product.available_sizes || product.sizes || [];
+  const rawSizes = product?.available_sizes || product?.sizes || [];
 
   const availableSizes = rawSizes
     .filter((size) => {
-      if (typeof size === "string") {
-        return Boolean(size);
-      }
+      if (typeof size === "string") return Boolean(size);
 
       return (
         Boolean(size?.label) &&
-        (size.stock_qty === undefined ||
-          Number(size.stock_qty) > 0)
+        (size.stock_qty === undefined || Number(size.stock_qty) > 0)
       );
     })
-    .map((size) =>
-      typeof size === "string" ? size : size.label
-    );
+    .map((size) => (typeof size === "string" ? size : size.label));
 
   const theme = {
     text: isBaba ? "text-baba-text" : "text-baby-text",
-
     secondary: isBaba
       ? "text-baba-text-secondary"
       : "text-baby-text-secondary",
   };
 
-  if (!product?.id || !product?.slug || !product?.name) {
+  useEffect(() => {
+    if (!product?.id) return;
+
+    const syncWishlistState = () => {
+      try {
+        const wishlist = JSON.parse(
+          localStorage.getItem("wishlist") || "[]"
+        );
+        setIsWishlisted(
+          wishlist.some((item) => item.id === product.id)
+        );
+      } catch {
+        setIsWishlisted(false);
+      }
+    };
+
+    syncWishlistState();
+    window.addEventListener("wishlistUpdated", syncWishlistState);
+    window.addEventListener("storage", syncWishlistState);
+
+    return () => {
+      window.removeEventListener("wishlistUpdated", syncWishlistState);
+      window.removeEventListener("storage", syncWishlistState);
+    };
+  }, [product?.id]);
+
+  if (
+    !product?.id ||
+    !product?.slug ||
+    !product?.name ||
+    !gender ||
+    (gender !== "boys" && gender !== "girls") ||
+    !primaryImg
+  ) {
     return null;
   }
 
-  if (!gender || (gender !== "boys" && gender !== "girls")) {
-    return null;
-  }
-
-  if (!primaryImg) {
-    return null;
-  }
+  const productUrl = `/${gender}/${product.slug}`;
 
   const addToCart = (size = "Standard") => {
     try {
@@ -126,44 +143,77 @@ export default function ProductCard({
   const handleConfirmAdd = (event) => {
     event.preventDefault();
     event.stopPropagation();
-
-    addToCart(
-      selectedSize || availableSizes[0] || "Standard"
-    );
+    addToCart(selectedSize || availableSizes[0] || "Standard");
   };
 
   const handleWishlist = (event) => {
     event.preventDefault();
     event.stopPropagation();
 
-    setIsWishlisted((previous) => !previous);
+    try {
+      const wishlist = JSON.parse(
+        localStorage.getItem("wishlist") || "[]"
+      );
+      const exists = wishlist.some((item) => item.id === product.id);
+
+      const updatedWishlist = exists
+        ? wishlist.filter((item) => item.id !== product.id)
+        : [
+            ...wishlist,
+            {
+              id: product.id,
+              sku: product.sku,
+              name: product.name,
+              slug: product.slug,
+              price: product.price,
+              compare_at_price: product.compare_at_price,
+              currency: product.currency,
+              image: primaryImg,
+              primary_image: primaryImg,
+              images: product.images ?? [],
+              available_sizes: product.available_sizes ?? [],
+              sizes: product.sizes ?? [],
+              category: product.category ?? null,
+              product_type: product.product_type,
+              gender,
+            },
+          ];
+
+      localStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
+      setIsWishlisted(!exists);
+
+      window.dispatchEvent(
+        new CustomEvent("wishlistUpdated", {
+          detail: updatedWishlist,
+        })
+      );
+
+      if (navigator.vibrate) navigator.vibrate(30);
+    } catch (error) {
+      console.error("Failed to update wishlist:", error);
+    }
   };
 
   const handleClosePicker = (event) => {
     event.preventDefault();
     event.stopPropagation();
-
     setShowSizePicker(false);
     setSelectedSize("");
   };
 
   return (
     <div className="group">
-      <div className="relative aspect-[3/4] overflow-hidden bg-store-bg-secondary">
-        <Link
-          href={productUrl}
-          className="absolute inset-0 block"
-        >
+      <div className="relative aspect-[4/5] overflow-hidden bg-store-bg-secondary md:aspect-[3/4]">
+        <Link href={productUrl} className="absolute inset-0 block">
           <Image
             src={primaryImg}
             alt={product.name}
             fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            sizes="(max-width: 640px) 85vw, (max-width: 1024px) 33vw, 25vw"
             loading="lazy"
-            className={`object-cover transition-all duration-700 ease-out group-hover:scale-[1.02] ${secondaryImg
-                ? "group-hover:opacity-0"
-                : ""
-              }`}
+            className={`object-cover transition-all duration-700 ease-out group-hover:scale-[1.02] ${
+              secondaryImg ? "group-hover:opacity-0" : ""
+            }`}
           />
 
           {secondaryImg && (
@@ -173,7 +223,7 @@ export default function ProductCard({
               aria-hidden="true"
               fill
               loading="lazy"
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              sizes="(max-width: 640px) 85vw, (max-width: 1024px) 33vw, 25vw"
               className="object-cover opacity-0 transition-all duration-700 ease-out group-hover:scale-[1.02] group-hover:opacity-100"
             />
           )}
@@ -191,18 +241,13 @@ export default function ProductCard({
           type="button"
           onClick={handleWishlist}
           className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-black/5 bg-white/95 shadow-[0_2px_12px_rgba(0,0,0,0.08)] backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:bg-white active:scale-95"
-          aria-label={
-            isWishlisted
-              ? "Remove from wishlist"
-              : "Add to wishlist"
-          }
+          aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
           aria-pressed={isWishlisted}
         >
           <Heart
-            className={`h-[17px] w-[17px] ${isWishlisted
-                ? "fill-black text-black"
-                : "text-black"
-              }`}
+            className={`h-[17px] w-[17px] ${
+              isWishlisted ? "fill-red-500 text-red-500" : "text-black"
+            }`}
             strokeWidth={1.8}
           />
         </button>
@@ -211,32 +256,28 @@ export default function ProductCard({
           type="button"
           onClick={handleQuickAdd}
           disabled={addedSuccess}
-          className={`absolute bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.18)] transition-all duration-200 ${addedSuccess
+          className={`absolute bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.18)] transition-all duration-200 ${
+            addedSuccess
               ? "pointer-events-none bg-black text-white"
               : showSizePicker
                 ? "pointer-events-none scale-95 opacity-0"
                 : "bg-black text-white hover:scale-[1.03] hover:bg-neutral-800 active:scale-95"
-            }`}
+          }`}
           aria-label="Add to cart"
         >
           {addedSuccess ? (
-            <Check
-              className="h-4 w-4"
-              strokeWidth={2.5}
-            />
+            <Check className="h-4 w-4" strokeWidth={2.5} />
           ) : (
-            <ShoppingBag
-              className="h-4 w-4"
-              strokeWidth={1.8}
-            />
+            <ShoppingBag className="h-4 w-4" strokeWidth={1.8} />
           )}
         </button>
 
         <div
-          className={`absolute inset-x-0 bottom-0 z-30 transition-all duration-300 ease-out ${showSizePicker
+          className={`absolute inset-x-0 bottom-0 z-30 transition-all duration-300 ease-out ${
+            showSizePicker
               ? "translate-y-0 opacity-100"
               : "pointer-events-none translate-y-full opacity-0"
-            }`}
+          }`}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -248,7 +289,6 @@ export default function ProductCard({
                 <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-neutral-400">
                   Select size
                 </div>
-
                 <div className="mt-0.5 text-[12px] font-medium text-neutral-900">
                   {selectedSize || "Choose a size"}
                 </div>
@@ -260,10 +300,7 @@ export default function ProductCard({
                 className="flex h-7 w-7 items-center justify-center text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
                 aria-label="Close size selector"
               >
-                <X
-                  className="h-4 w-4"
-                  strokeWidth={1.8}
-                />
+                <X className="h-4 w-4" strokeWidth={1.8} />
               </button>
             </div>
 
@@ -281,10 +318,11 @@ export default function ProductCard({
                         event.stopPropagation();
                         setSelectedSize(size);
                       }}
-                      className={`min-w-[40px] border px-2.5 py-1.5 text-[10px] font-semibold transition-all duration-150 ${isSelected
+                      className={`min-w-[40px] border px-2.5 py-1.5 text-[10px] font-semibold transition-all duration-150 ${
+                        isSelected
                           ? "border-black bg-black text-white"
                           : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-500 hover:text-black"
-                        }`}
+                      }`}
                     >
                       {size}
                     </button>
@@ -298,10 +336,11 @@ export default function ProductCard({
                 type="button"
                 onClick={handleConfirmAdd}
                 disabled={addedSuccess}
-                className={`flex h-10 w-full items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white transition-all duration-200 active:scale-[0.98] ${addedSuccess
+                className={`flex h-10 w-full items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white transition-all duration-200 active:scale-[0.98] ${
+                  addedSuccess
                     ? "bg-emerald-600"
                     : "bg-black hover:bg-neutral-800"
-                  }`}
+                }`}
               >
                 {addedSuccess ? (
                   <>
@@ -322,24 +361,18 @@ export default function ProductCard({
 
       <Link href={productUrl} className="block pt-3">
         {product.category?.name && (
-          <div
-            className={`mb-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] ${theme.secondary}`}
-          >
+          <div className={`mb-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] ${theme.secondary}`}>
             {product.category.name}
           </div>
         )}
 
         <div className="flex items-start justify-between gap-4">
-          <h3
-            className={`min-w-0 flex-1 font-[var(--font-playfair)] text-[16px] leading-[1.35] tracking-normal ${theme.text}`}
-          >
+          <h3 className={`min-w-0 flex-1 font-[var(--font-playfair)] text-[16px] leading-[1.35] tracking-normal ${theme.text}`}>
             {product.name}
           </h3>
 
           <div className="shrink-0 text-right">
-            <div
-              className={`whitespace-nowrap text-sm font-semibold tracking-tight ${theme.text}`}
-            >
+            <div className={`whitespace-nowrap text-sm font-semibold tracking-tight ${theme.text}`}>
               {product.currency} {price.toLocaleString()}
             </div>
 
@@ -352,9 +385,7 @@ export default function ProductCard({
         </div>
 
         {product.product_type && (
-          <div
-            className={`mt-1.5 text-[10px] ${theme.secondary}`}
-          >
+          <div className={`mt-1.5 text-[10px] ${theme.secondary}`}>
             {product.product_type}
           </div>
         )}

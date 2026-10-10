@@ -12,6 +12,10 @@ export default function CartItem({
   onIncrease,
   onDecrease,
   onRemove,
+  availableStock = null,
+  remainingStock = null,
+  isMaxStock = false,
+  isLoadingStock = false,
 }) {
   const quantity = Number(
     item?.quantity || 1
@@ -112,7 +116,14 @@ export default function CartItem({
                 onClick={() =>
                   onIncrease(item)
                 }
-                className="flex h-full w-7 items-center justify-center text-store-text-secondary transition-colors hover:bg-store-bg-secondary hover:text-store-text"
+                disabled={isMaxStock || isLoadingStock}
+                className={`flex h-full w-7 items-center justify-center transition-colors ${
+                  isMaxStock
+                    ? "cursor-not-allowed text-store-text-secondary/40"
+                    : isLoadingStock
+                    ? "cursor-wait text-store-text-secondary/60"
+                    : "text-store-text-secondary hover:bg-store-bg-secondary hover:text-store-text"
+                }`}
                 aria-label="Increase quantity"
               >
                 <Plus
@@ -137,6 +148,21 @@ export default function CartItem({
                   {price.toLocaleString()}{" "}
                   each
                 </div>
+              )}
+
+              {/* Stock indicator */}
+              {availableStock !== null && (
+                <div className={`mt-0.5 text-[8px] ${
+                  isMaxStock
+                    ? "text-red-600 font-semibold"
+                    : "text-store-text-secondary"
+                }`}>
+                  {isLoadingStock
+                    ? "Checking..."
+                    : isMaxStock
+                    ? "Out of stock"
+                    : `${remainingStock} more available`}
+              </div>
               )}
             </div>
           </div>

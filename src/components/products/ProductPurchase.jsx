@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Minus,
   Plus,
@@ -45,7 +46,6 @@ export default function ProductPurchase({
         surface: "bg-baby-surface",
       };
 
-        
   const availableSizes = useMemo(() => {
     return (product?.available_sizes ?? []).filter(
       (size) =>
@@ -53,7 +53,6 @@ export default function ProductPurchase({
         Number(size.stock_qty) > 0
     );
   }, [product?.available_sizes]);
-
 
   const hasSizes = availableSizes.length > 0;
 
@@ -250,8 +249,9 @@ export default function ProductPurchase({
       </div>
 
       <div className={`mt-4 grid grid-cols-3 border-y ${styles.border}`}>
-        <div
-          className={`flex flex-col items-center justify-center gap-1.5 border-r ${styles.border} px-2 py-3 text-center`}
+        <Link
+          href="/shipping"
+          className={`flex flex-col items-center justify-center gap-1.5 border-r ${styles.border} px-2 py-3 text-center transition-opacity hover:opacity-60`}
         >
           <Truck
             size={17}
@@ -266,10 +266,11 @@ export default function ProductPurchase({
           <span className={`text-[11px] ${styles.secondary}`}>
             Nationwide
           </span>
-        </div>
+        </Link>
 
-        <div
-          className={`flex flex-col items-center justify-center gap-1.5 border-r ${styles.border} px-2 py-3 text-center`}
+        <Link
+          href="/returns"
+          className={`flex flex-col items-center justify-center gap-1.5 border-r ${styles.border} px-2 py-3 text-center transition-opacity hover:opacity-60`}
         >
           <RefreshCw
             size={17}
@@ -284,7 +285,7 @@ export default function ProductPurchase({
           <span className={`text-[11px] ${styles.secondary}`}>
             Easy returns
           </span>
-        </div>
+        </Link>
 
         <div className="flex flex-col items-center justify-center gap-1.5 px-2 py-3 text-center">
           <ShieldCheck
